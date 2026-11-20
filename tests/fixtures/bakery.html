@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><title>Rosie's Bakery | Dayton OH</title>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","name":"Rosie's Bakery","url":"https://bakery.test/"},
+ {"@type":"Bakery","name":"Rosie's Bakery","telephone":"+1-937-555-0142",
+  "address":{"@type":"PostalAddress","streetAddress":"412 Wayne Ave","addressLocality":"Dayton","addressRegion":"OH","postalCode":"45410"},
+  "openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Saturday"],"opens":"08:00","closes":"14:00"}],
+  "hasMenu":{"@type":"Menu","hasMenuSection":{"@type":"MenuSection","name":"Cakes","hasMenuItem":[
+    {"@type":"MenuItem","name":"Chocolate layer cake","offers":{"@type":"Offer","price":"38.00","priceCurrency":"USD"}}]}}}
+]}
+</script></head>
+<body>
+<header><h1>Rosie's Bakery</h1><nav><a href="/menu">Menu</a> <a href="/files/cake-menu.pdf">Cake menu (PDF)</a></nav></header>
+<main>
+<p>Custom cakes for Saturday pickup. Chocolate layer cake $38.00. Cupcakes $3.50 each.</p>
+<p>Hours: Saturday 8am - 2pm, Tue-Fri 7am - 5pm</p>
+<address>412 Wayne Ave, Dayton, OH 45410</address>
+<p>Call <a href="tel:+19375550142">(937) 555-0142</a> or email <a href="mailto:hello@bakery.test">hello@bakery.test</a></p>
+<img src="/img/storefront.jpg" alt="Rosie's storefront on Wayne Ave">
+<form><label for="em">Email</label><input id="em" name="email" type="email">
+<label>Name <input name="name"></label><input type="hidden" name="t"><button>Join</button></form>
+</main></body></html>

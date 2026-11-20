@@ -1,0 +1,11 @@
+# block AI training only
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: *
+Disallow: /admin
+Sitemap: https://bakery.test/sitemap.xml
