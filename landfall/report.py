@@ -257,7 +257,7 @@ def headline(scan, do):
     c = worst[0]
     # Prices that only appear after JavaScript block shopping outright (verified live: ChatGPT found the products
     # but "not a price"), so that finding leads whenever it is present.
-    priced = [f for f in fails if f.get("id") == "nojs_content" and "prices" in (f.get("detail") or "")]
+    priced = [f for f in fails if f.get("id") == "nojs_content" and "prices" in (f.get("detail") or "").lower()]
     if priced:
         c = {"id": "nojs_prices"}
     if c.get("id") in HEADLINES:
