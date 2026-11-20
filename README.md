@@ -113,3 +113,11 @@ runs/        per-site outputs (gitignored)
 ```
 python -m unittest discover -s tests -t .
 ```
+
+## Known gaps (as of submission)
+- REA (reverse-engineering toolkit) was used by hand for the florist's teardown (`evidence/rea/`: network capture with a
+  real Chrome, price source traced to script data). It is not yet a stage in the automated pipeline or on the Agent37 lanes.
+- Firedrill: 2 drills run (89 and 91.5 out of 100 on the honesty criterion); the third, after both fixes, is not run yet.
+- Visibility ("Found") after fixes cannot be re-measured the same day: assistants take time to re-index a site.
+- Changing things on a live store (prices, listings) is the next step and needs the owner's login plus approval
+  before anything goes live; today the workers produce fix files and a tested copy, never live edits.
