@@ -35,7 +35,7 @@ mcp = FastMCP(
         "poll job_status), quick_check for a 30-second read-only scan. Landfall is read-only on real websites: it "
         "never submits forms, books or buys. Share the report link with the business owner. "
         "STYLE FOR YOUR REPLY: the person is a busy small-business owner. Answer in at most 5 short lines: lead with "
-        "the tool's `owner_summary` (the one biggest problem, in plain words), then the before -> after numbers on one "
+        "the tool's `owner_summary` (which assistants can and cannot get in, then the biggest problem), then the before -> after numbers on one "
         "line, then one next step, then the report link. No tables, no headings, no jargon. Offer details only if asked."
     ),
     stateless_http=True,
@@ -111,6 +111,8 @@ def owner_summary(res: dict) -> str:
     """Three plain lines for a busy owner, built from the run's own numbers (no new claims)."""
     probs = res.get("top_problems") or []
     top = probs[0]["detail"] if probs else "Assistants could read your basic facts."
+    if res.get("assistant_access"):
+        top = res["assistant_access"]["summary"] + (" " + top if probs and probs[0]["id"] != "bot_challenge" else "")
     rd = res.get("read") or {}
     fe = (res.get("do_fetch") or {})
     b, a = (fe.get("before") or (res.get("do") or {}).get("before")), (fe.get("after") or (res.get("do") or {}).get("after"))
@@ -133,6 +135,11 @@ def get_report(slug: str) -> dict:
         return {"slug": slug, "status": "no results yet"}
     res = summarize(d)
     res["report"] = _report_link(slug)
+    if res.get("url"):  # live, read-only: one GET per assistant identity, so this part is always current
+        from landfall import access
+        acc = access.run(res["url"], d)
+        res["assistant_access"] = {"summary": acc["summary"], "checked_at": acc["checked_at"],
+                                   "results": [{k: r[k] for k in ("assistant", "status", "allowed")} for r in acc["results"]]}
     res["owner_summary"] = owner_summary(res)
     owner = d / "fixes" / "needs-owner.md"
     if owner.exists():

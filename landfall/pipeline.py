@@ -77,6 +77,7 @@ class Job:
         from landfall import agent_run
 
         self._cli("scan", ["landfall", "scan", self.url, "--out", str(self.dir)])
+        self._cli("access", ["landfall.access", self.url, str(self.dir)], timeout=120)
         if self.query and not (self.dir / "find.json").exists():
             self.stage("find", "running")
             try:
