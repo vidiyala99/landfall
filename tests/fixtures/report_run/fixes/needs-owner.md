@@ -1,0 +1,3 @@
+- Are you open on Sundays in December? Your sign and your Facebook page disagree.
+- What is the latest day someone can order a cake for Saturday pickup?
+- Do you want assistants to send people to the order form, or to call (937) 555-0148?

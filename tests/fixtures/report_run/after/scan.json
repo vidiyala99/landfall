@@ -1,0 +1,127 @@
+{
+  "url": "https://www.hartwellbakery.example/",
+  "slug": "hartwellbakery-example",
+  "fetched_at": "2026-11-20T20:41:07Z",
+  "checks": [
+    {
+      "id": "jsonld_business",
+      "title": "No hidden label with your hours and address",
+      "status": "pass",
+      "severity": "high",
+      "detail": "Your site has no schema.org label (JSON-LD), so assistants have to guess your hours from the photo of your sign.",
+      "receipt": {
+        "kind": "html",
+        "path": "receipts/scan/home.html",
+        "excerpt": "<img src=\"hours-sign.jpg\"> <!-- no LocalBusiness JSON-LD found -->",
+        "url": "https://www.hartwellbakery.example/"
+      },
+      "fixable": true,
+      "fix_id": "jsonld"
+    },
+    {
+      "id": "robots_ai",
+      "title": "Your site tells some AI assistants to stay out",
+      "status": "pass",
+      "severity": "high",
+      "detail": "robots.txt blocks GPTBot and ClaudeBot, so ChatGPT and Claude cannot read any page.",
+      "receipt": {
+        "kind": "text",
+        "path": "receipts/scan/robots.txt",
+        "excerpt": "User-agent: GPTBot\nDisallow: /\nUser-agent: ClaudeBot\nDisallow: /",
+        "url": "https://www.hartwellbakery.example/robots.txt"
+      },
+      "fixable": true,
+      "fix_id": "robots"
+    },
+    {
+      "id": "menu_js",
+      "title": "Your menu only appears after a script runs",
+      "status": "pass",
+      "severity": "med",
+      "detail": "The cake menu loads from a widget. Without it the page just says \"Loading...\".",
+      "receipt": {
+        "kind": "html",
+        "path": "receipts/scan/menu.html",
+        "excerpt": "<div id=\"menu-widget\">Loading...</div>",
+        "url": "https://www.hartwellbakery.example/menu"
+      },
+      "fixable": true,
+      "fix_id": "menu_static"
+    },
+    {
+      "id": "form_labels",
+      "title": "The cake order form has unlabeled boxes",
+      "status": "pass",
+      "severity": "med",
+      "detail": "Three boxes have no label, so an assistant cannot tell which is the pickup date. <script>alert('x')</script>",
+      "receipt": {
+        "kind": "html",
+        "path": "receipts/scan/order.html",
+        "excerpt": "<input name=\"f2\" type=\"text\">",
+        "url": "https://www.hartwellbakery.example/order"
+      },
+      "fixable": true,
+      "fix_id": "labels"
+    },
+    {
+      "id": "llms_txt",
+      "title": "No short guide for assistants (llms.txt)",
+      "status": "pass",
+      "severity": "low",
+      "detail": "There is no llms.txt file summarizing what you sell and how to order.",
+      "receipt": {
+        "kind": "http",
+        "path": "receipts/scan/llms-404.txt",
+        "excerpt": "GET /llms.txt -> 404 Not Found",
+        "url": "https://www.hartwellbakery.example/llms.txt"
+      },
+      "fixable": true,
+      "fix_id": "llms"
+    },
+    {
+      "id": "https",
+      "title": "Secure connection",
+      "status": "pass",
+      "severity": "low",
+      "detail": "Site loads over HTTPS.",
+      "receipt": {
+        "kind": "http",
+        "path": "receipts/scan/home.html",
+        "excerpt": "",
+        "url": "https://www.hartwellbakery.example/"
+      },
+      "fixable": false,
+      "fix_id": null
+    },
+    {
+      "id": "phone",
+      "title": "Phone number is readable",
+      "status": "pass",
+      "severity": "med",
+      "detail": "Phone number is plain text on every page.",
+      "receipt": {
+        "kind": "html",
+        "path": "receipts/scan/home.html",
+        "excerpt": "(937) 555-0148",
+        "url": "https://www.hartwellbakery.example/"
+      },
+      "fixable": false,
+      "fix_id": null
+    }
+  ],
+  "score": {
+    "read": 88,
+    "passed": 7,
+    "total": 7
+  },
+  "facts": {
+    "name": "Hartwell Family Bakery",
+    "phone": "(937) 555-0148",
+    "address": "412 Brown St, Dayton, OH 45409",
+    "hours_text": "Tue-Sat 7am-3pm",
+    "offer_snippets": [
+      "Custom layer cakes",
+      "Buckeye brownies"
+    ]
+  }
+}

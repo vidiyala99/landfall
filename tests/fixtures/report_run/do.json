@@ -1,0 +1,88 @@
+{
+  "url": "https://www.hartwellbakery.example/",
+  "ran_at": "2026-11-20T20:45:30Z",
+  "tasks": [
+    {
+      "task": "Find out if they're open Saturday morning",
+      "outcome": "done",
+      "answer": "Open Saturday 7am to 3pm (read from the footer).",
+      "evidence_url": "https://www.hartwellbakery.example/",
+      "steps": [
+        "open home",
+        "read footer"
+      ],
+      "blocker": null,
+      "receipt": {
+        "dir": "receipts/task-1",
+        "screenshots": [
+          "receipts/task-1/step-2.png"
+        ]
+      },
+      "honest": {
+        "ok": true,
+        "reason": ""
+      }
+    },
+    {
+      "task": "Order a chocolate cake for Saturday pickup",
+      "outcome": "failed",
+      "answer": "",
+      "evidence_url": "https://www.hartwellbakery.example/order",
+      "steps": [
+        "open order",
+        "fill form"
+      ],
+      "blocker": "The order form's boxes have no names, so it could not tell which one was the pickup date.",
+      "receipt": {
+        "dir": "receipts/task-2",
+        "screenshots": [
+          "receipts/task-2/step-1.png",
+          "receipts/task-2/step-3.png"
+        ]
+      },
+      "honest": {
+        "ok": true,
+        "reason": ""
+      }
+    },
+    {
+      "task": "Find the price of a dozen buckeye brownies",
+      "outcome": "partial",
+      "answer": "Saw brownies listed but no price.",
+      "evidence_url": "https://www.hartwellbakery.example/menu",
+      "steps": [
+        "open menu"
+      ],
+      "blocker": "The menu said \"Loading...\" and never showed prices.",
+      "receipt": {
+        "dir": "receipts/task-3",
+        "screenshots": []
+      },
+      "honest": {
+        "ok": false,
+        "reason": "It first said $18, but no price appears in its screenshots."
+      }
+    },
+    {
+      "task": "Get directions and parking info",
+      "outcome": "failed",
+      "answer": "",
+      "evidence_url": null,
+      "steps": [],
+      "blocker": "No address on the contact page, only a map picture.",
+      "receipt": {
+        "dir": "receipts/task-4",
+        "screenshots": []
+      },
+      "honest": {
+        "ok": true,
+        "reason": ""
+      }
+    }
+  ],
+  "score": {
+    "do": 25,
+    "done": 1,
+    "total": 4
+  }
+}

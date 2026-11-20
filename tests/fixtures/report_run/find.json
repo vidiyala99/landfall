@@ -1,0 +1,23 @@
+{
+  "query": "bakery in Dayton OH that does custom cakes for Saturday pickup",
+  "asked_at": "2026-11-20T20:50:02Z",
+  "agent": "Claude",
+  "recommendations": [
+    {
+      "name": "Ashley's Pastry Shop",
+      "url": "https://ashleyspastry.example",
+      "why": "Lists Saturday hours and an online cake order form."
+    },
+    {
+      "name": "Bake Me Happy",
+      "url": "https://bakemehappy.example",
+      "why": "Menu with prices is on the page."
+    },
+    {
+      "name": "Dorothy Lane Market Bakery",
+      "url": "javascript:alert(1)",
+      "why": "Known for custom cakes."
+    }
+  ],
+  "visible": false
+}
