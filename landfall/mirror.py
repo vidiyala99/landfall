@@ -185,8 +185,88 @@ def fetch_root_files(url: str, out: Path) -> list[str]:
     return saved
 
 
-def capture(url: str, out: str | Path, keep_js: bool = False, timeout_ms: int = 45000) -> dict:
-    """Load url in headless Chromium (GET only), save rendered DOM + assets to out."""
+MAX_PAGES = 8
+MAX_BYTES = 5 * 1024 * 1024
+_SKIP_PATH = re.compile(
+    r"(logout|log-out|signout|sign-out|login|log-in|signin|sign-in|register|cart|basket|checkout|account|"
+    r"wp-admin|wp-login|wp-json|xmlrpc|/feed|feed/|rss|atom|replytocom|add-to-cart)",
+    re.IGNORECASE,
+)
+_FILE_EXT = re.compile(
+    r"\.(pdf|jpe?g|png|gif|webp|svg|zip|rar|gz|mp4|mov|mp3|docx?|xlsx?|pptx?|xml|txt|json|ics|csv)$", re.IGNORECASE
+)
+
+
+def _host(u: str) -> str:
+    h = urlsplit(u).netloc.lower()
+    return h[4:] if h.startswith("www.") else h
+
+
+def page_key(url: str) -> str:
+    """Identity of a page for mirroring: host (minus www.) + path without trailing slash."""
+    return _host(url) + (urlsplit(url).path.rstrip("/") or "/")
+
+
+def page_dir(url: str) -> str:
+    """Local directory for a page ('' for the homepage, 'contact/' for /contact/)."""
+    path = unquote(urlsplit(url).path).strip("/")
+    parts = [re.sub(r"[^A-Za-z0-9._-]+", "_", seg)[:80] or "_"
+             for seg in path.split("/") if seg not in ("", ".", "..")]
+    return "/".join(parts) + "/" if parts else ""
+
+
+def pick_internal_links(home_url: str, links: list, limit: int = MAX_PAGES) -> list[str]:
+    """Choose up to `limit` same-site pages to mirror. links = [(absolute href, is_nav)]; nav links first."""
+    seen = {page_key(home_url)}
+    nav, rest = [], []
+    for href, is_nav in links:
+        if not href:
+            continue
+        sp = urlsplit(href)
+        if sp.scheme not in ("http", "https") or _host(href) != _host(home_url):
+            continue
+        if _SKIP_PATH.search(sp.path + ("?" + sp.query if sp.query else "")) or _FILE_EXT.search(sp.path):
+            continue
+        k = page_key(href)
+        if k in seen:
+            continue
+        seen.add(k)
+        (nav if is_nav else rest).append(f"{sp.scheme}://{sp.netloc}{sp.path or '/'}")
+    return (nav + rest)[:limit]
+
+
+_A_HREF_RE = re.compile(r"""(?P<pre><a\b[^>]*?\shref\s*=\s*)(?P<q>["'])(?P<val>.*?)(?P=q)""", re.IGNORECASE | re.DOTALL)
+
+
+def rewrite_links(html: str, page_url: str, page_map: dict[str, str], depth: int) -> str:
+    """Point <a href> at mirrored pages with relative paths. page_map: page_key -> local dir ('' = home)."""
+    up = "../" * depth
+
+    def sub(m):
+        raw = m.group("val").strip()
+        if not raw or raw.startswith(("#", "mailto:", "tel:", "javascript:", "data:")):
+            return m.group(0)
+        absu = urljoin(page_url, raw.replace("&amp;", "&"))
+        if urlsplit(absu).scheme not in ("http", "https"):
+            return m.group(0)
+        local = page_map.get(page_key(absu))
+        if local is None:
+            return m.group(0)
+        frag = ("#" + absu.split("#", 1)[1]) if "#" in absu else ""
+        target = (up + local) or "./"
+        return f'{m.group("pre")}{m.group("q")}{target}{frag}{m.group("q")}'
+
+    return _A_HREF_RE.sub(sub, html)
+
+
+_LINKS_JS = """() => [...document.querySelectorAll('a[href]')].map(a => [a.href,
+    !!a.closest('nav, header, [role=navigation], .menu, .nav, #menu, #nav, .navbar, #top-menu, .et-menu')])"""
+
+
+def capture(url: str, out: str | Path, keep_js: bool = False, timeout_ms: int = 45000,
+            max_pages: int = MAX_PAGES) -> dict:
+    """Load the homepage plus up to max_pages same-site pages in headless Chromium (GET only); save each
+    rendered DOM as <path>/index.html with shared assets, asset and internal links rewritten to local copies."""
     from playwright.sync_api import sync_playwright
 
     out = Path(out)
@@ -197,43 +277,69 @@ def capture(url: str, out: str | Path, keep_js: bool = False, timeout_ms: int = 
     def on_response(resp):
         try:
             req = resp.request
-            if req.method != "GET" or req.resource_type not in ASSET_TYPES:
+            if req.method != "GET" or req.resource_type not in ASSET_TYPES or resp.status != 200:
                 return
-            if resp.status != 200:
+            if int(resp.headers.get("content-length") or 0) > MAX_BYTES:
                 return
-            bodies[_norm(resp.url)] = (resp.headers.get("content-type", ""), resp.body())
+            body = resp.body()
+            if len(body) <= MAX_BYTES:
+                bodies[_norm(resp.url)] = (resp.headers.get("content-type", ""), body)
         except Exception:
             pass
 
+    pages: list[tuple[str, str]] = []
+    skipped: list[str] = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         ctx = browser.new_context(user_agent=UA, viewport={"width": 1366, "height": 900})
         page = ctx.new_page()
 
-        # Read-only guard: abort any non-GET request the page tries to make.
-        def guard(route):
+        def guard(route):  # read-only: abort anything that is not a GET/HEAD
             if route.request.method not in ("GET", "HEAD"):
                 return route.abort()
             return route.continue_()
 
         page.route("**/*", guard)
         page.on("response", on_response)
-        page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-        try:
-            page.wait_for_load_state("networkidle", timeout=15000)
-        except Exception:
-            pass
-        # Scroll to trigger lazy images.
-        page.evaluate(
-            """async () => { for (let y = 0; y < document.body.scrollHeight; y += 700) {
-                 window.scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); } window.scrollTo(0, 0); }"""
-        )
-        try:
-            page.wait_for_load_state("networkidle", timeout=8000)
-        except Exception:
-            pass
+
+        def load(u: str):
+            resp = page.goto(u, wait_until="domcontentloaded", timeout=timeout_ms)
+            if resp is not None:
+                ct = resp.headers.get("content-type") or "text/html"
+                if resp.status >= 400 or "html" not in ct or int(resp.headers.get("content-length") or 0) > MAX_BYTES:
+                    return None
+            try:
+                page.wait_for_load_state("networkidle", timeout=12000)
+            except Exception:
+                pass
+            page.evaluate(
+                """async () => { for (let y = 0; y < document.body.scrollHeight; y += 700) {
+                     window.scrollTo(0, y); await new Promise(r => setTimeout(r, 100)); } window.scrollTo(0, 0); }"""
+            )
+            try:
+                page.wait_for_load_state("networkidle", timeout=6000)
+            except Exception:
+                pass
+            html = page.content()
+            return html if len(html.encode("utf-8", "ignore")) <= MAX_BYTES else None
+
+        home_html = load(url)
+        if home_html is None:
+            raise RuntimeError(f"could not load {url}")
         final_url = page.url
-        html = page.content()
+        pages.append((final_url, home_html))
+        links = [tuple(x) for x in page.evaluate(_LINKS_JS)]
+        for cu in pick_internal_links(final_url, links, max_pages):
+            try:
+                h = load(cu)
+            except Exception:
+                h = None
+            if h is None or _host(page.url) != _host(final_url):
+                skipped.append(cu)
+                continue
+            if page_key(page.url) in {page_key(u) for u, _ in pages}:
+                continue
+            pages.append((page.url, h))
         browser.close()
 
     url_map: dict[str, str] = {}
@@ -246,15 +352,22 @@ def capture(url: str, out: str | Path, keep_js: bool = False, timeout_ms: int = 
     for aurl, local in url_map.items():
         ct, body = bodies[aurl]
         if "text/css" in ct.lower() or local.endswith(".css"):
-            css = body.decode("utf-8", errors="replace")
-            body = rewrite_css(css, aurl, url_map, prefix="").encode("utf-8")
+            body = rewrite_css(body.decode("utf-8", errors="replace"), aurl, url_map, prefix="").encode("utf-8")
         (assets_dir / local).write_bytes(body)
         manifest_assets[f"assets/{local}"] = aurl
 
-    if not keep_js:
-        html = strip_scripts(html)
-    html = rewrite_html(html, final_url, url_map, prefix="assets/")
-    (out / "index.html").write_text(html, encoding="utf-8")
+    page_map = {page_key(u): ("" if i == 0 else page_dir(u)) for i, (u, _) in enumerate(pages)}
+    manifest_pages = {}
+    for i, (purl, html) in enumerate(pages):
+        local = "" if i == 0 else page_dir(purl)
+        depth = local.count("/")
+        if not keep_js:
+            html = strip_scripts(html)
+        html = rewrite_html(html, purl, url_map, prefix="../" * depth + "assets/")
+        html = rewrite_links(html, purl, page_map, depth)
+        (out / local).mkdir(parents=True, exist_ok=True)
+        (out / local / "index.html").write_text(html, encoding="utf-8")
+        manifest_pages[local + "index.html"] = purl
 
     root_files = fetch_root_files(final_url, out)
     manifest = {
@@ -262,6 +375,8 @@ def capture(url: str, out: str | Path, keep_js: bool = False, timeout_ms: int = 
         "final_url": final_url,
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "keep_js": keep_js,
+        "pages": manifest_pages,
+        "skipped_pages": skipped,
         "assets": manifest_assets,
         "root_files": root_files,
     }
@@ -314,7 +429,7 @@ def main(argv: list[str] | None = None) -> int:
     if not a.url or not a.out:
         ap.error("url and --out are required (or use --serve DIR)")
     m = capture(a.url, a.out, keep_js=a.keep_js)
-    print(f"mirrored {m['final_url']} -> {a.out} ({len(m['assets'])} assets; root files: {', '.join(m['root_files']) or 'none'})")
+    print(f"mirrored {m['final_url']} -> {a.out} ({len(m['pages'])} pages, {len(m['assets'])} assets; root files: {', '.join(m['root_files']) or 'none'})")
     return 0
 
 

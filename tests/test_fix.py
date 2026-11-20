@@ -170,6 +170,15 @@ class RunTest(unittest.TestCase):
         self.assertIn("suggested, owner to confirm", (self.run_dir / "fixes" / "alt-text.md").read_text(encoding="utf-8"))
         self.assertTrue((self.run_dir / "fixes" / "facts-text.md").exists())
 
+    def test_two_page_mirror(self):
+        fixed = self.run_dir / "mirror-fixed"
+        contact = (fixed / "contact" / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn("ld+json", contact)  # JSON-LD only on the homepage
+        sitemap = (fixed / "sitemap.xml").read_text(encoding="utf-8")
+        self.assertIn("<loc>https://example-bakery.test/</loc>", sitemap)
+        self.assertIn("<loc>https://example-bakery.test/contact/</loc>", sitemap)
+        self.assertFalse((fixed / "contact" / "llms.txt").exists())
+
     def test_source_mirror_untouched(self):
         self.assertNotIn("ld+json", (self.run_dir / "mirror" / "index.html").read_text(encoding="utf-8"))
 

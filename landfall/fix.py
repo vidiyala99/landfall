@@ -758,10 +758,17 @@ def _receipt_link(r: dict) -> str:
     return "(no receipt)"
 
 
-def build_sitemap(url: str) -> str:
+def build_sitemap(urls) -> str:
+    if isinstance(urls, str):
+        urls = [urls]
+    seen, locs = set(), []
+    for u in urls:
+        if u and u not in seen:
+            seen.add(u)
+            locs.append(f"  <url><loc>{htmlmod.escape(u)}</loc></url>\n")
     return ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
-            f"  <url><loc>{htmlmod.escape(url)}</loc></url>\n</urlset>\n")
+            + "".join(locs) + "</urlset>\n")
 
 
 def inject_jsonld(html: str, ld: dict) -> str:
@@ -783,10 +790,13 @@ def run(run_dir: str | Path) -> dict:
 
     html = ""
     manifest_assets: dict = {}
+    mirrored_pages: list = []
     if (mirror / "index.html").exists():
         html = (mirror / "index.html").read_text(encoding="utf-8", errors="replace")
         if (mirror / "manifest.json").exists():
-            manifest_assets = json.loads((mirror / "manifest.json").read_text(encoding="utf-8")).get("assets", {})
+            _man = json.loads((mirror / "manifest.json").read_text(encoding="utf-8"))
+            manifest_assets = _man.get("assets", {})
+            mirrored_pages = list((_man.get("pages") or {}).values())
     text, links = page_text_and_links(html)
     platform = detect_platform(html)
     url = scan.get("url") or ""
@@ -810,7 +820,7 @@ def run(run_dir: str | Path) -> dict:
         questions.append(f"Your robots.txt blocks {b} (a user-facing agent). Customers asking that agent about you get nothing. Keep the block?")
     card = build_agent_card(scan, ld, links)
     (fixes / "agent.json").write_text(json.dumps(card, indent=2) + "\n", encoding="utf-8")
-    sitemap = None if has_sitemap or not url else build_sitemap(url)
+    sitemap = None if has_sitemap or not url else build_sitemap([url] + mirrored_pages[1:])
     if sitemap:
         (fixes / "sitemap.xml").write_text(sitemap, encoding="utf-8")
 
@@ -892,7 +902,7 @@ def run(run_dir: str | Path) -> dict:
         "robots": ("Patched robots.txt: kept every rule you had, added an Allow group for "
                    + (", ".join(added) if added else "no new agents (all already named)") + ".",
                    "fixes/robots.txt", _hint("rootfile", platform)),
-        "sitemap": ("Generated a minimal sitemap.xml listing your homepage." if sitemap else "Sitemap already exists; robots.txt now points to it.",
+        "sitemap": (f"Generated sitemap.xml listing {sitemap.count('<loc>') if sitemap else 0} page(s) of your site." if sitemap else "Sitemap already exists; robots.txt now points to it.",
                     "fixes/sitemap.xml" if sitemap else "fixes/robots.txt", _hint("rootfile", platform)),
         "labels": (f"Suggested labels for {len(labels)} unlabeled form field(s) (suggested, owner to confirm).", "fixes/form-labels.md",
                    "Add each label in your site editor's form settings (field label / placeholder / accessibility name)."),

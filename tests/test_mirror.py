@@ -50,6 +50,54 @@ class RewriteTest(unittest.TestCase):
         self.assertEqual(n, mirror.local_name("https://cdn.test/fonts/Inter%20Bold?x=1", "font/woff2"))
 
 
+class InternalPagesTest(unittest.TestCase):
+    HOME = "https://www.bake.test/"
+
+    def test_pick_internal_links(self):
+        links = [
+            ("https://bake.test/contact/", False), ("https://www.bake.test/cakes-cookies/", True),
+            ("https://bake.test/cart/", True), ("https://bake.test/wp-admin/", True),
+            ("https://bake.test/my-account/", True), ("https://bake.test/menu.pdf", True),
+            ("https://bake.test/feed/", False), ("https://other.test/x", True),
+            ("https://bake.test/#top", True), ("https://bake.test/contact", True),
+            ("mailto:a@bake.test", True),
+        ]
+        self.assertEqual(mirror.pick_internal_links(self.HOME, links),
+                         ["https://www.bake.test/cakes-cookies/", "https://bake.test/contact/"])
+        many = [(f"https://bake.test/p{i}/", False) for i in range(20)]
+        self.assertEqual(len(mirror.pick_internal_links(self.HOME, many)), 8)
+
+    def test_rewrite_links_two_pages(self):
+        page_map = {mirror.page_key(self.HOME): "", mirror.page_key("https://bake.test/contact/"): "contact/"}
+        home = ('<a href="/contact/">C</a><a href="https://bake.test/contact#map">M</a>'
+                '<a href="https://www.bake.test/">H</a><a href="/about/">A</a><a href="tel:1">T</a>')
+        out = mirror.rewrite_links(home, self.HOME, page_map, 0)
+        self.assertIn('href="contact/"', out)
+        self.assertIn('href="contact/#map"', out)
+        self.assertIn('href="./"', out)
+        self.assertIn('href="/about/"', out)  # not mirrored: left alone
+        self.assertIn('href="tel:1"', out)
+        sub = mirror.rewrite_links('<a class="x" href="https://bake.test/">Home</a><a href="/contact/">C</a>',
+                                   "https://bake.test/contact/", page_map, 1)
+        self.assertIn('href="../"', sub)
+        self.assertIn('href="../contact/"', sub)
+        self.assertEqual(mirror.page_dir("https://bake.test/cakes-cookies/"), "cakes-cookies/")
+        self.assertEqual(mirror.page_dir("https://bake.test/"), "")
+
+    def test_two_page_mirror_navigates_offline(self):
+        root = FIX / "run" / "mirror"
+        httpd = mirror.serve(root, 0)
+        try:
+            port = httpd.server_address[1]
+            home = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=5).read().decode()
+            self.assertIn("Sweet Crumb", home)
+            contact = urllib.request.urlopen(f"http://127.0.0.1:{port}/contact/", timeout=5).read().decode()
+            self.assertIn("Contact us", contact)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
 class ServeTest(unittest.TestCase):
     def test_serves_root_files(self):
         with tempfile.TemporaryDirectory() as d:
