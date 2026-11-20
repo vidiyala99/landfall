@@ -210,7 +210,7 @@ async def report_page(request: Request) -> Response:
     page = RUNS / slug / "report.html"
     try:
         from landfall import report
-        html = report.render(RUNS / slug, variant=request.query_params.get("v") or "a")
+        html = report.render(RUNS / slug, variant=request.query_params.get("v") or "harbor-a")
         return HTMLResponse(html)
     except Exception as e:  # noqa: BLE001
         if page.exists():
