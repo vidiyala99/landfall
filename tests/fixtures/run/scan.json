@@ -1,0 +1,27 @@
+{
+  "url": "https://example-bakery.test/",
+  "slug": "example-bakery",
+  "fetched_at": "2026-11-20T21:00:00Z",
+  "checks": [
+    {"id": "robots_ai", "title": "AI agents allowed in robots.txt", "status": "fail", "severity": "high", "detail": "robots.txt blocks every bot with Disallow: / for *.", "receipt": {"kind": "http", "path": "robots.txt", "excerpt": "User-agent: *\nDisallow: /", "url": "https://example-bakery.test/robots.txt"}, "fixable": true, "fix_id": "robots_patch"},
+    {"id": "llms_txt", "title": "llms.txt present", "status": "fail", "severity": "med", "detail": "/llms.txt returns 404.", "receipt": {"kind": "http", "path": "", "excerpt": "404", "url": "https://example-bakery.test/llms.txt"}, "fixable": true, "fix_id": "llms_txt"},
+    {"id": "jsonld_business", "title": "Business JSON-LD", "status": "fail", "severity": "high", "detail": "No schema.org LocalBusiness JSON-LD on the homepage. A review site lists phone (555) 010-9999.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "no application/ld+json", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "jsonld"},
+    {"id": "jsonld_hours", "title": "Hours in JSON-LD", "status": "fail", "severity": "high", "detail": "Hours only appear as plain text.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "Mon-Fri 7am-3pm, Sat 8-2", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "jsonld"},
+    {"id": "jsonld_offers", "title": "Offers/menu in JSON-LD", "status": "warn", "severity": "med", "detail": "Products only appear as text.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "Custom cakes", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "jsonld"},
+    {"id": "nojs_content", "title": "Content without JavaScript", "status": "pass", "severity": "high", "detail": "Main text present in raw HTML.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "Sweet Crumb", "url": "https://example-bakery.test/"}, "fixable": false, "fix_id": null},
+    {"id": "bot_challenge", "title": "No bot challenge", "status": "fail", "severity": "high", "detail": "Cloudflare challenge served to agent user-agents.", "receipt": {"kind": "http", "path": "", "excerpt": "cf-chl", "url": "https://example-bakery.test/"}, "fixable": false, "fix_id": null},
+    {"id": "form_labels", "title": "Form fields labeled", "status": "fail", "severity": "med", "detail": "2 inputs have no label.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "<input name=\"email_address\">", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "form_labels"},
+    {"id": "img_alt", "title": "Images have alt text", "status": "fail", "severity": "low", "detail": "2 images lack alt.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "<img src=\"chocolate-layer-cake.jpg\">", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "img_alt"},
+    {"id": "contact_machine_readable", "title": "Contact is machine-readable", "status": "fail", "severity": "med", "detail": "Phone is not a tel: link.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "(937) 555-0142", "url": "https://example-bakery.test/"}, "fixable": true, "fix_id": "jsonld"},
+    {"id": "sitemap", "title": "sitemap.xml present", "status": "fail", "severity": "low", "detail": "/sitemap.xml returns 404.", "receipt": {"kind": "http", "path": "", "excerpt": "404", "url": "https://example-bakery.test/sitemap.xml"}, "fixable": true, "fix_id": "sitemap"},
+    {"id": "facts_in_images_or_pdf", "title": "Facts not locked in images/PDFs", "status": "warn", "severity": "med", "detail": "Menu is an image.", "receipt": {"kind": "html", "path": "index.html", "excerpt": "menu-board.png", "url": "https://example-bakery.test/menu-board.png"}, "fixable": true, "fix_id": "facts_text"}
+  ],
+  "score": {"read": 1, "passed": 1, "total": 12},
+  "facts": {
+    "name": "Sweet Crumb Bakery",
+    "phone": "(937) 555-0142",
+    "address": "123 Main St, Dayton, OH 45402",
+    "hours_text": "Mon-Fri 7am-3pm, Sat 8-2",
+    "offer_snippets": ["Custom cakes", "Sourdough bread", "Saturday cake pickup"]
+  }
+}
