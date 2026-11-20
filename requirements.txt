@@ -1,0 +1,4 @@
+playwright
+httpx
+mcp>=1.26,<2
+pypdf
