@@ -57,14 +57,14 @@ def _now() -> str:
 
 def _mcp_config(shots_dir: Path) -> str:
     shots_dir.mkdir(parents=True, exist_ok=True)
-    cfg = {
-        "mcpServers": {
-            "playwright": {
-                "command": "npx",
-                "args": ["@playwright/mcp@latest", "--headless", "--isolated", "--output-dir", str(shots_dir)],
-            }
-        }
-    }
+    args = ["@playwright/mcp@latest", "--headless", "--isolated", "--output-dir", str(shots_dir.resolve())]
+    exe = os.environ.get("LANDFALL_CHROME_PATH")
+    if not exe and sys.platform.startswith("linux"):
+        found = sorted(Path.home().glob(".cache/ms-playwright/chromium-*/chrome-linux*/chrome"))
+        exe = str(found[-1]) if found else None
+    if exe:  # Agent37 lanes: no Google Chrome, use Playwright's Chromium; gVisor needs --no-sandbox
+        args += ["--browser", "chromium", "--executable-path", exe, "--no-sandbox"]
+    cfg = {"mcpServers": {"playwright": {"command": "npx", "args": args}}}
     path = shots_dir / "mcp.json"
     path.write_text(json.dumps(cfg), encoding="utf-8")
     return str(path)
