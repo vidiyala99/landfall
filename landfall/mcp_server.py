@@ -5,6 +5,7 @@ Tools:
   job_status(slug)                                -> stage-by-stage progress
   get_report(slug)                                -> scores before/after, top problems, fixes, owner questions
   quick_check(url)                                -> static agent-readability scan only (~30 s)
+  list_products_for_ai(url)                       -> products + prices as JSON-LD / llms.txt list (read-only render)
 
 Run:  python -m landfall.mcp_server --port 8765   (streamable HTTP at /mcp, reports at /reports/<slug>)
 """
@@ -161,6 +162,36 @@ def quick_check(url: str) -> dict:
             "failed": [{"title": c["title"], "detail": c["detail"], "severity": c["severity"]}
                        for c in scan["checks"] if c["status"] == "fail"],
             "report": _report_link(slug)}
+
+
+@mcp.tool()
+def list_products_for_ai(url: str) -> dict:
+    """Digital worker: read the shop's products and prices the way a shopper sees them (real browser, read-only)
+    and write them out so assistants that don't run JavaScript can see them. Only seen name+price pairs."""
+    from landfall import products
+    slug = slugify(url)
+    out = RUNS / slug
+    out.mkdir(parents=True, exist_ok=True)
+    got = products.extract(url if "://" in url else "https://" + url, out)
+    rec = products.load(out) or {}
+    files = ["products.json"]
+    if got:
+        name = ""
+        try:
+            name = (json.loads((out / "scan.json").read_text(encoding="utf-8")).get("facts") or {}).get("name") or ""
+        except (OSError, json.JSONDecodeError):
+            pass
+        fx = out / "fixes"
+        fx.mkdir(exist_ok=True)
+        from landfall.fix import inject_jsonld
+        (fx / "products.jsonld.html").write_text(inject_jsonld("", products.to_jsonld(got, name)), encoding="utf-8")
+        (fx / "products.md").write_text("# Products and prices\n\n" + products.to_text(got) + "\n", encoding="utf-8")
+        files += ["fixes/products.jsonld.html", "fixes/products.md"]
+    return {"slug": slug, "count": len(got),
+            "sample": [{"name": p["name"], "price": p["price"]} for p in got[:5]],
+            "files": [f"{PUBLIC_URL}/reports/{slug}/files/{f}" for f in files],
+            "note": rec.get("note") or ("Paste products.jsonld.html into your site's head; the list stays correct only "
+                                        "if you re-run this after price changes")}
 
 
 @mcp.custom_route("/reports/{slug}", methods=["GET"])

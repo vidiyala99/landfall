@@ -780,6 +780,30 @@ def inject_jsonld(html: str, ld: dict) -> str:
     return block + html
 
 
+def _products_for(run_dir: Path, scan: dict, url: str) -> dict | None:
+    """products.json from the run, or extract it when the scan found prices hidden behind JavaScript."""
+    from landfall import products as _pm
+    rec = _pm.load(run_dir)
+    if rec is not None or not url:
+        return rec
+    nojs = next((c for c in scan.get("checks") or [] if c.get("id") == "nojs_content"), None)
+    if nojs and nojs.get("status") in ("fail", "warn") and "price" in (nojs.get("detail") or "").lower():
+        try:
+            _pm.extract(url, run_dir)
+        except Exception:  # noqa: BLE001  a failed render just means no product list
+            return None
+        return _pm.load(run_dir)
+    return None
+
+
+def inject_products_section(html: str, section: str) -> str:
+    """Plain HTML product list (no script needed) placed at the top of <body>."""
+    m = re.search(r"<body[^>]*>", html, re.IGNORECASE)
+    if m:
+        return html[: m.end()] + "\n" + section + html[m.end():]
+    return section + html
+
+
 def run(run_dir: str | Path) -> dict:
     run_dir = Path(run_dir)
     scan = json.loads((run_dir / "scan.json").read_text(encoding="utf-8"))
@@ -854,6 +878,18 @@ def run(run_dir: str | Path) -> dict:
             locked_status.append(st)
         (fixes / "facts-text.md").write_text("\n".join(parts), encoding="utf-8")
 
+    # ---- products with prices (digital worker: list my products for AI assistants)
+    prod_rec = _products_for(run_dir, scan, url)
+    products = (prod_rec or {}).get("products") or []
+    if products:
+        from landfall import products as _pm
+        bname = (scan.get("facts") or {}).get("name") or ""
+        (fixes / "products.jsonld.html").write_text(inject_jsonld("", _pm.to_jsonld(products, bname)), encoding="utf-8")
+        (fixes / "products.md").write_text(f"# Products and prices\n\nRead from the rendered site {prod_rec.get('extracted_at', '')}; "
+                                          "re-run after price changes.\n\n" + _pm.to_text(products) + "\n", encoding="utf-8")
+        llms = llms.rstrip("\n") + "\n\n## Products and prices\n\n" + _pm.to_text(products) + "\n"
+        (fixes / "llms.txt").write_text(llms, encoding="utf-8")
+
     # ---- apply to mirror-fixed
     applied: list[str] = []
     if (mirror / "index.html").exists():
@@ -872,6 +908,12 @@ def run(run_dir: str | Path) -> dict:
         fhtml, na = apply_alts(fhtml, alts)
         if na:
             applied.append(f"suggested alt added to {na} image(s)")
+        if products:
+            fhtml = inject_jsonld(fhtml, _pm.to_jsonld(products, bname))
+            fhtml = inject_products_section(fhtml, _pm.to_html_section(products))
+            (fixed / "products").mkdir(exist_ok=True)
+            (fixed / "products" / "index.html").write_text(_pm.to_html_page(products, bname), encoding="utf-8")
+            applied.append(f"{len(products)} products with prices added as plain HTML + ItemList JSON-LD to index.html; products/index.html written")
         (fixed / "index.html").write_text(fhtml, encoding="utf-8")
         (fixed / "llms.txt").write_text(llms, encoding="utf-8")
         (fixed / "robots.txt").write_text(robots, encoding="utf-8")
@@ -936,6 +978,17 @@ def run(run_dir: str | Path) -> dict:
         for c in manual:
             ch.append(f"- **{c.get('title') or c.get('id')}** (`{c.get('id')}`): {c.get('detail', '')} Receipt: {_receipt_link(c.get('receipt') or {})}")
         ch.append("")
+    if products:
+        shots = [r.get("screenshot") for r in (prod_rec.get("pages") or []) if r.get("screenshot")]
+        ch += [f"### Listed {len(products)} products with prices so assistants that don't run scripts can see them", "",
+               "- **What was wrong:** your product prices appear only after JavaScript runs, so assistants that read the raw page see names without prices.",
+               f"- **Receipt:** `products.json` (rendered {prod_rec.get('extracted_at', '?')}; pages: "
+               + ", ".join(r.get("url", "") for r in prod_rec.get("pages") or []) + ")"
+               + (f"; screenshots: {', '.join('`' + s + '`' for s in shots)}" if shots else ""),
+               "- **What we changed:** only name + price pairs seen on your rendered pages, as schema.org ItemList JSON-LD, "
+               "a plain list in llms.txt, and a visible \"Our arrangements and prices\" section.",
+               "- **File:** `fixes/products.jsonld.html`, `fixes/products.md`",
+               "- **Where to paste:** products.jsonld.html into your site's <head>; re-run after price changes so the list stays correct.", ""]
     ch += ["## Also included", "",
            "- `fixes/agent.json`: a proposed agent card (what an agent can do here). Proposal only; not a standard yet.",
            "- `fixes/needs-owner.md`: questions only you can answer. We left those facts out rather than guess.", "",
@@ -943,7 +996,8 @@ def run(run_dir: str | Path) -> dict:
     (fixes / "CHANGES.md").write_text("\n".join(ch), encoding="utf-8")
 
     return {"fixes": str(fixes), "mirror_fixed": str(fixed) if fixed.exists() else None,
-            "fixable_fails": [c["id"] for c in fixable], "applied": applied, "questions": len(questions)}
+            "fixable_fails": [c["id"] for c in fixable], "applied": applied, "questions": len(questions),
+            "products": len(products)}
 
 
 def main(argv: list[str] | None = None) -> int:
