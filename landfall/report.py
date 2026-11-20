@@ -883,8 +883,7 @@ def _layout_harbor_b(ctx) -> str:
     arrived = ('<section class="block" id="broken"><h2>What came ashore</h2>'
                '<p class="note">Biggest first. Turn a tag over for the proof.</p>'
                f'{_cargo_tags(ctx["scan"], ctx["after_scan"])}</section>' + ctx["find"])
-    ready = ('<a class="enamel enamel-big" href="#fixes"><span class="e-k">Your to-do</span>'
-             f'<span class="e-v">{esc(_todo_words(ctx))}</span></a>' + ctx["fixes"])
+    ready = ctx["fixes"]  # its "Your to-do" heading is styled as the yellow enamel plate
     panels = [arrived, fixed_line + ctx["do"], ready]
     body = "".join(f'<div class="panel p{i}" id="{berths[i - 1][0]}">{part}{nxt(i)}</div>'
                    for i, part in enumerate(panels, 1))

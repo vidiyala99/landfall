@@ -7,7 +7,7 @@ body.v-harbor{
   --gilt:#efc566; --gilt-deep:#b8893a; --wood:#5a3220; --wood-dark:#2b160a;
   --manila:#ead3a2; --manila-2:#dcc08a; --tag-ink:#2a1d12; --twine:#c9a36b; --twine-dark:#8f6c3e;
   --enamel:#f3b928; --enamel-ink:#1b2838; --brass:#c79a3c;
-  --rust:#9c3418; --amber-ink:#7a4d06; --blue-ink:#34506a; --green-ink:#2f5f2a;
+  --rust:#9c3418; --amber-ink:#6a4204; --blue-ink:#34506a; --green-ink:#2f5f2a;
   --paper:var(--night); --surface:#173546; --ink:var(--chalk); --ink-2:var(--chalk-2);
   --line:#2f4b5a; --line-2:#22404f; --accent:var(--gilt); --accent-soft:#3a2f15;
   --good:#8fdca8; --good-soft:#15352a; --bad:#ffa58c; --bad-soft:#3b1f17; --warn:#f2c45a; --warn-soft:#3a2f15;
@@ -56,13 +56,14 @@ body.v-harbor{
 
 /* Yellow enamel plate: your to-do */
 .enamel{display:inline-grid;align-content:center;gap:4px;padding:18px 34px;border-radius:12px;text-decoration:none;color:var(--enamel-ink);
-  background:radial-gradient(circle at 12px 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),
-    radial-gradient(circle at 12px calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),
-    linear-gradient(180deg,#f8cd4a,var(--enamel) 55%,#e2a414);
+  position:relative;background:linear-gradient(180deg,#f8cd4a,var(--enamel) 55%,#e2a414);
   border:3px solid var(--brass);
-  box-shadow:inset 0 2px 0 rgb(255 255 255 / .45),inset 0 -3px 0 rgb(120 70 0 / .35),0 14px 28px -10px rgb(0 0 0 / .65);
+  box-shadow:inset 0 2px 0 rgb(255 255 255 / .45),inset 0 -2px 4px rgb(120 70 0 / .3),0 14px 28px -10px rgb(0 0 0 / .65);
   transition:transform 160ms var(--ease-out)}
 .v-harbor a.enamel{color:var(--enamel-ink)}
+.enamel::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(circle at 12px 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),
+    radial-gradient(circle at 12px calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px)}
 .enamel .e-k{font:800 1.9em/1 var(--display)}
 .enamel .e-v{font:700 1.05em/1.25 var(--body)}
 @media (hover:hover) and (pointer:fine){.enamel:hover{transform:translateY(-2px)}}
@@ -87,7 +88,7 @@ body.v-harbor{
 .c-name{font:700 1.2em/1.22 var(--body);color:var(--tag-ink)}
 .cargo .tag{background:transparent;border:1.5px dashed currentColor;color:var(--blue-ink);font-size:.8em;max-width:none;align-self:flex-start}
 .cargo .tag.fixed{color:var(--green-ink)}.cargo .tag.host{color:var(--amber-ink)}
-.c-open{margin-top:auto;font-size:.82em;font-weight:700;color:#6b5236;display:flex;align-items:center;gap:8px}
+.c-open{margin-top:auto;font-size:.82em;font-weight:700;color:#523b24;display:flex;align-items:center;gap:8px}
 .c-open::after{content:"";width:8px;height:8px;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform 200ms var(--ease-out)}
 .cargo details[open] .c-open::after{transform:translateY(2px) rotate(-135deg)}
 .cargo details[open] .c-open{font-size:0}.cargo details[open] .c-open::before{content:"Proof";font-size:.82rem}
