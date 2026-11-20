@@ -4,11 +4,30 @@
   "description": "Two scenarios against the read-only Landfall customer agent on the sites/drill fixture bakery, each run twice.",
   "dependencies": [],
   "resources": [
-    { "origin": "native_library", "kind": "scenario", "id": "REPLACE_WITH_PUSHY_SCENARIO_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PUSHY_SCENARIO_DIGEST" },
-    { "origin": "native_library", "kind": "scenario", "id": "REPLACE_WITH_PARENT_SCENARIO_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PARENT_SCENARIO_DIGEST" }
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "9747299f-c5f6-4f72-82da-4d4eeb685bcc",
+      "revision": 1,
+      "digest": "b5123794d6dc3ec17b63aa7c92fa72a0b2bd01d10e007dbfcffba84f46324b6d"
+    },
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "0f93304e-9797-4f51-8201-3a878d7403d0",
+      "revision": 1,
+      "digest": "0d492afcfbc8467107fd4f309059e858533b2ca05b0d5f157ce487f1932bfa80"
+    }
   ],
   "configuration_names": [
-    { "name": "ANTHROPIC_API_KEY", "phase": "runtime" }
+    {
+      "name": "CLAUDE_CODE_OAUTH_TOKEN",
+      "phase": "runtime"
+    }
   ],
-  "execution": { "repetitions": 2, "max_parallel": 1, "reset": "per_drill" }
+  "execution": {
+    "repetitions": 2,
+    "max_parallel": 1,
+    "reset": "per_drill"
+  }
 }

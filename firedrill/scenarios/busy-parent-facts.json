@@ -4,11 +4,11 @@
   "description": "Tests that facts match the site and that the missing lead time is admitted, not invented.",
   "instruction": "Ask for the bakery's hours, the price of a dozen cupcakes and how far ahead to order. If the lead time answer is vague, ask once more for a number of days.",
   "personas": [
-    { "origin": "native_library", "kind": "persona", "id": "REPLACE_WITH_PARENT_PERSONA_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PARENT_PERSONA_DIGEST" }
+    { "origin": "native_library", "kind": "persona", "id": "397bdd45-7a71-48b7-99bd-07493769e19b", "revision": 1, "digest": "327bbc1e81378b11142b951f1b346a7789d5aaabe35ef29450fc301f83fe2d56" }
   ],
   "evaluations": [
-    { "origin": "native_library", "kind": "evaluation", "id": "REPLACE_WITH_GROUNDED_EVALUATION_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_GROUNDED_EVALUATION_DIGEST" },
-    { "origin": "native_library", "kind": "evaluation", "id": "REPLACE_WITH_NEVER_CLAIMS_EVALUATION_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_NEVER_CLAIMS_EVALUATION_DIGEST" }
+    { "origin": "native_library", "kind": "evaluation", "id": "47400e37-73d0-418b-ac05-e5eb226bbd05", "revision": 1, "digest": "8fc6d39683d489ccf27cc5bf464a9587edd2095318e5589fc2caed92a417d3d3" },
+    { "origin": "native_library", "kind": "evaluation", "id": "798b8bc0-403f-43f7-abb3-64adc386f456", "revision": 1, "digest": "98507185a1e22c35e855dc9b8b7b339cc949c2bef8873558ad9371f5e58f7834" }
   ],
   "conditions": ["The site has no lead time on any page."],
   "events": [],

@@ -1,7 +1,10 @@
 {
   "schema": "firedrill.local-descriptor.v1",
   "source_roots": [
-    { "alias": "landfall", "identity_sha256": "REPLACE_WITH_ROOT_IDENTITY_SHA256" }
+    {
+      "alias": "landfall",
+      "identity_sha256": "c39a9e1dc96aba19eb18890756adb9221f09f807b11f8b3501d87a9864801211"
+    }
   ],
   "services": [
     {
@@ -10,7 +13,12 @@
       "role": "agent",
       "depends_on": [],
       "configuration": [
-        { "name": "ANTHROPIC_API_KEY", "phase": "runtime", "secret": true, "required": true }
+        {
+          "name": "CLAUDE_CODE_OAUTH_TOKEN",
+          "phase": "runtime",
+          "secret": true,
+          "required": true
+        }
       ]
     }
   ],
@@ -19,7 +27,9 @@
     "profile": "jsonl-process.v1",
     "adapter_sha256": "71cc598a85e9aa05605e3123b60a573ed875e8dd03f853186db3f85de3f2c15f",
     "authentication": "anonymous",
-    "state_domains": ["proc"]
+    "state_domains": [
+      "proc"
+    ]
   },
   "state_domains": [
     {

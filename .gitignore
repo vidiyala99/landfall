@@ -6,3 +6,4 @@ runs/
 mirror/*/raw/
 .venv/
 node_modules/
+firedrill/plan.local.json
