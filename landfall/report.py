@@ -330,7 +330,14 @@ def section_broken(scan, after_scan) -> str:
             link = f'<a href="{href}">See the proof</a>' if href else ""
             if not link and safe_url(r.get("url")):
                 link = _ext_link(r.get("url"), "See the page")
-            fixed = ' <span class="fixed">Fixed in our test copy</span>' if after_status.get(c.get("id")) == "pass" else ""
+            if after_status.get(c.get("id")) != "pass":
+                fixed = ""
+            elif c.get("fixable") is False or not c.get("fix_id"):
+                # Not something a file can fix (e.g. a bot wall at the host): our copy simply has no wall.
+                fixed = (' <span class="fixed">Needs a setting change by you or your website host;'
+                         ' our test copy shows what happens after</span>')
+            else:
+                fixed = ' <span class="fixed">Fixed in our test copy</span>'
             rows.append(f'<li class="finding sev-{sev}"><div class="top"><h3>{esc(c.get("title") or c.get("id") or "Problem")}</h3>'
                         f'<span class="sev">{SEV_WORD[sev]}</span>{fixed}</div>'
                         f'<p>{esc(c.get("detail") or "")}</p>'
