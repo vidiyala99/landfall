@@ -77,14 +77,14 @@ class Job:
         from landfall import agent_run
 
         self._cli("scan", ["landfall", "scan", self.url, "--out", str(self.dir)])
-        if self.query:
+        if self.query and not (self.dir / "find.json").exists():
             self.stage("find", "running")
             try:
                 agent_run.run_find(self.url, self.query, self.name, self.dir)
                 self.stage("find", "done")
             except Exception as e:  # noqa: BLE001
                 self.stage("find", "failed", str(e)[:300])
-        if self.run_tasks and self.tasks:
+        if self.run_tasks and self.tasks and not (self.dir / "do.json").exists():
             self.stage("do", "running")
             try:
                 agent_run.run_do(self.url, self.tasks, self.dir)
