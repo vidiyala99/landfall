@@ -156,7 +156,7 @@ def markdown(md: str) -> str:
     return "\n".join(out)
 
 
-# ---------- sections ----------
+# ---------- scores ----------
 
 def _read_score(scan):
     if not scan:
@@ -179,17 +179,99 @@ def _do_score(do):
     return None
 
 
-def _score_row(label, what, before_html, after_html) -> str:
-    return (f'<div class="score" role="group" aria-label="{esc(label)}"><div><div class="label">{esc(label)}</div>'
-            f'<p class="what">{what}</p></div><div class="nums">{before_html}{after_html}</div></div>')
-
-
 def _num(v, cls, unit=""):
     return f'<span class="{cls}">{esc(v)}</span>' + (f'<span class="unit">{esc(unit)}</span>' if unit else "")
 
 
-ARROW = '<span class="arrow" aria-label="became">&rarr;</span>'
+ARROW = '<span class="arrow" aria-hidden="true"></span><span class="sr">became</span>'
 NOT_RUN = '<span class="na">not run yet</span>'
+PENDING = '<span class="pending">re-check after you publish the fixes</span>'
+
+# ---------- the headline: one plain sentence an owner gets in five seconds ----------
+
+# Most-blocking first; a check that keeps assistants out entirely beats a missing label.
+HEADLINE_ORDER = ("bot_challenge", "robots_ai", "nojs_content", "jsonld_business", "facts_in_images_or_pdf",
+                  "menu_js", "jsonld_hours", "jsonld_offers", "contact_machine_readable", "form_labels", "llms_txt")
+HEADLINES = {
+    "bot_challenge": ("ChatGPT can't get into your website", "Your site turns AI assistants away at the door."),
+    "robots_ai": ("Your website tells AI assistants to stay out", "A setting on your site asks assistants like ChatGPT not to read it."),
+    "nojs_content": ("Your website looks blank to AI assistants", "Your key facts only appear after a script runs, and most assistants never run it."),
+    "jsonld_business": ("AI assistants can't be sure who you are", "Your name, address and phone are not labeled in a way assistants can read."),
+    "facts_in_images_or_pdf": ("Your menu is locked where AI can't read it", "Your prices sit inside pictures or PDFs that assistants skip."),
+    "menu_js": ("AI assistants can't see your menu", "Your menu only appears after a script runs, and most assistants never run it."),
+    "jsonld_hours": ("AI assistants can't tell when you're open", "Your hours are not labeled in a way assistants can read, so they guess."),
+    "jsonld_offers": ("AI assistants can't see what you sell", "Your products and prices are not labeled in a way assistants can read."),
+    "contact_machine_readable": ("AI assistants can't pick up your contact details", "Your phone and address are hard for assistants to find on the page."),
+    "form_labels": ("AI assistants can't fill in your forms", "Some boxes on your forms have no name, so assistants don't know what to type."),
+    "llms_txt": ("AI assistants have no guide to your website", "A short guide file would tell them what you do and where your facts live."),
+}
+# Short problem names for the "what's broken" rows (check titles in scan.json describe the passing state).
+PROBLEM = {
+    "bot_challenge": "A bot wall turns AI assistants away",
+    "robots_ai": "Your site tells AI assistants to stay out",
+    "nojs_content": "Key facts only appear after a script runs",
+    "jsonld_business": "Name, address and phone are not labeled for assistants",
+    "jsonld_hours": "Opening hours are not labeled for assistants",
+    "jsonld_offers": "Products and prices are not labeled for assistants",
+    "facts_in_images_or_pdf": "Menu or prices are stuck in pictures or PDFs",
+    "form_labels": "Form boxes have no names",
+    "contact_machine_readable": "Phone and address are hard for assistants to pick up",
+    "img_alt": "Pictures have no text descriptions",
+    "sitemap": "No sitemap for assistants to follow",
+    "llms_txt": "No short guide for assistants (llms.txt)",
+}
+
+
+def _failing(scan):
+    checks = [c for c in _list(_dict(scan).get("checks")) if isinstance(c, dict)]
+    fails = [c for c in checks if c.get("status") in ("fail", "warn")]
+    fails.sort(key=lambda c: (SEV_ORDER.get(c.get("severity"), 3), 0 if c.get("status") == "fail" else 1))
+    return checks, fails
+
+
+def _task_sentence(do):
+    ds = _do_score(do)
+    if not ds:
+        return ""
+    done, total = ds
+    if done == 0:
+        return f"An AI assistant tried {total} customer tasks and couldn't finish any."
+    if done < total:
+        return f"An AI assistant finished {done} of {total} customer tasks."
+    return f"An AI assistant still finished all {total} customer tasks."
+
+
+def headline(scan, do):
+    """(title, sub) in plain words, from the worst failed check plus the task results."""
+    if not scan:
+        return ("Can AI assistants help your customers?",
+                "We test what assistants like ChatGPT see on your website, build fixes, and test again.")
+    _, fails = _failing(scan)
+    tasks = _task_sentence(do)
+    if not fails:
+        return ("AI assistants can read your website", " ".join(x for x in ("Every check we ran passed.", tasks) if x))
+    top_sev = SEV_ORDER.get(fails[0].get("severity"), 3)
+    worst = [c for c in fails if SEV_ORDER.get(c.get("severity"), 3) == top_sev]
+    worst.sort(key=lambda c: HEADLINE_ORDER.index(c.get("id")) if c.get("id") in HEADLINE_ORDER else 99)
+    c = worst[0]
+    if c.get("id") in HEADLINES:
+        title, sub = HEADLINES[c["id"]]
+    else:
+        title = "AI assistants are missing facts about you"
+        sub = f"We found {len(fails)} {'thing' if len(fails) == 1 else 'things'} that stop assistants reading your site."
+    return title, " ".join(x for x in (sub, tasks) if x)
+
+
+# ---------- hero ----------
+
+def _flat(before, after) -> str:
+    """Only an improvement gets the green 'after' colour; no change stays neutral."""
+    return " flat" if isinstance(before, (int, float)) and isinstance(after, (int, float)) and after <= before else ""
+
+
+def _metric(label, question, value_html) -> str:
+    return (f'<div class="metric" role="group" aria-label="{esc(label)}"><div class="m-label">{esc(label)}</div>'
+            f'<div class="m-q">{esc(question)}</div><div class="nums">{value_html}</div></div>')
 
 
 def section_hero(name, url, scan, after_scan, do, after_do, find, after_find) -> str:
@@ -198,14 +280,14 @@ def section_hero(name, url, scan, after_scan, do, after_do, find, after_find) ->
         read = NOT_RUN
     else:
         read = (_num(rb, "before") if rb is not None else NOT_RUN) + ARROW + (
-            _num(ra, "after", "/100") if ra is not None else '<span class="pending">re-check after you publish the fixes</span>')
+            _num(ra, "after" + _flat(rb, ra), "/100") if ra is not None else PENDING)
 
     db, da = _do_score(do), _do_score(after_do)
     if db is None and da is None:
         doh = NOT_RUN
     else:
         doh = (_num(f"{db[0]}/{db[1]}", "before") if db else NOT_RUN) + ARROW + (
-            _num(f"{da[0]}/{da[1]}", "after") if da else '<span class="pending">re-check after you publish the fixes</span>')
+            _num(f"{da[0]}/{da[1]}", "after" + _flat(db[0] if db else None, da[0])) if da else PENDING)
 
     def yn(f, cls):
         v = f.get("visible")
@@ -218,22 +300,23 @@ def section_hero(name, url, scan, after_scan, do, after_do, find, after_find) ->
         found = NOT_RUN
     else:
         found = (yn(find, "before") if find else NOT_RUN) + ARROW + (
-            yn(after_find, "after") if after_find else '<span class="pending">re-check after you publish the fixes</span>')
+            yn(after_find, "after") if after_find else PENDING)
 
-    site = f' <a href="{safe_url(url)}" rel="noopener noreferrer">{esc(_host(url))}</a>' if safe_url(url) else ""
-    if site and str(name).lower() == _host(url).lower():
-        name, site = "", site.strip()
+    site = f'<a href="{safe_url(url)}" rel="noopener noreferrer">{esc(_host(url))}</a>' if safe_url(url) else ""
+    show_name = esc(name) if not (site and str(name).lower() == _host(url).lower()) else ""
+    biz = show_name + (" " if show_name and site else "") + site
+    title, sub = headline(scan, do)
     return f"""
 <header class="hero wrap" id="top">
-  <div class="biz">{esc(name)}{(' &middot;' if name and site else '') + site}</div>
-  <h1>Can AI assistants help your customers?</h1>
-  <p class="lede">More people now ask AI assistants like ChatGPT, Claude and Meta Muse to find a bakery, check hours or order a cake.
-  We tested what those assistants see on your website today, built fixes, and tested again.</p>
-  <div class="board">
-    {_score_row("Read", "Can assistants read your basic facts: name, hours, address, menu?", read, "")}
-    {_score_row("Do", "Could an assistant finish real customer tasks on your site?", doh, "")}
-    {_score_row("Found", "When a customer asked an assistant for a place like yours, did it suggest you?", found, "")}
+  <p class="biz">{biz}</p>
+  <h1>{esc(title)}</h1>
+  <p class="sub">{esc(sub)}</p>
+  <div class="board" aria-label="Before and after our fixes">
+    {_metric("Read", "Can assistants read your facts?", read)}
+    {_metric("Do", "Can they finish customer tasks?", doh)}
+    {_metric("Found", "Do they suggest you?", found)}
   </div>
+  <p class="legend">Today, then after our fixes on a private copy of your site.</p>
 </header>"""
 
 
@@ -244,12 +327,28 @@ def _host(url):
 
 
 def _empty(msg):
-    return f'<div class="empty">{msg}</div>'
+    return f'<p class="empty">{msg}</p>'
+
+
+def _first_sentence(text, limit=140):
+    t = re.sub(r"\s+", " ", str(text or "")).strip()
+    m = re.match(r"^(.+?[.!?])(\s|$)", t)
+    t = m.group(1) if m else t
+    return t if len(t) <= limit else t[:limit - 1].rstrip() + "…"
+
+
+def _row(cls, summary_html, body_html) -> str:
+    return (f'<details class="row {cls}"><summary>{summary_html}<span class="chev" aria-hidden="true"></span></summary>'
+            f'<div class="body">{body_html}</div></details>')
+
+
+# ---------- tasks ----------
+
+CHIP_WORD = {"done": "Done", "partial": "Partly", "failed": "Failed"}
 
 
 def section_do(do, after_do) -> str:
-    head = ('<h2>What the assistant tried</h2><p class="lede">We gave an AI assistant real customer jobs on your site. '
-            'It only looked; it never ordered, paid or sent a form.</p>')
+    head = '<h2>What the assistant tried</h2><p class="note">Real customer jobs. It only looked: no orders, payments or forms.</p>'
     tasks = [t for t in _list(_dict(do).get("tasks")) if isinstance(t, dict)]
     after_tasks = {str(t.get("task")): t for t in _list(_dict(after_do).get("tasks")) if isinstance(t, dict)}
     if not tasks and not after_tasks:
@@ -260,9 +359,11 @@ def section_do(do, after_do) -> str:
     for t in tasks:
         a = after_tasks.get(str(t.get("task"))) if do else None
         is_after_only = not do
-        before_chip = _chip(None if is_after_only else t.get("outcome"), "Before")
         after_src = t if is_after_only else a
-        after_chip = _chip(after_src.get("outcome") if after_src else None, "After fixes", pending=not after_src)
+        chips = (_chip(None if is_after_only else t.get("outcome"), "Before") + ARROW
+                 + _chip(after_src.get("outcome") if after_src else None, "After fixes", pending=not after_src))
+        reason_src = (t.get("blocker") if t.get("outcome") != "done" else None) or t.get("answer") or t.get("blocker")
+        reason = f'<span class="why">{esc(_first_sentence(reason_src))}</span>' if reason_src and not is_after_only else ""
         facts = []
         blocker = t.get("blocker")
         if blocker and not is_after_only:
@@ -278,19 +379,20 @@ def section_do(do, after_do) -> str:
         if t.get("evidence_url") and safe_url(t.get("evidence_url")):
             links.append(_ext_link(t.get("evidence_url"), "page it used"))
         dl = "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in facts)
-        items.append(f'<article class="task"><h3>{esc(t.get("task") or "Untitled task")}</h3>'
-                     f'<div class="outcomes">{before_chip}{after_chip}</div>'
-                     + (f'<dl class="facts">{dl}</dl>' if dl else "")
-                     + (f'<div class="receipts">Proof: {"".join(links)}</div>' if links else "")
-                     + "</article>")
-    return f'<section class="block wrap" id="tasks">{head}<div class="tasks">{"".join(items)}</div></section>'
+        body = ((f'<dl class="facts">{dl}</dl>' if dl else "")
+                + (f'<p class="receipts"><span>Proof:</span> {"".join(links)}</p>' if links else "")) or '<p class="muted">No details saved.</p>'
+        summary = (f'<span class="r-title">{esc(t.get("task") or "Untitled task")}</span>'
+                   f'<span class="chips">{chips}</span>{reason}')
+        items.append(_row("task", summary, body))
+    return f'<section class="block wrap" id="tasks">{head}<div class="rows">{"".join(items)}</div></section>'
 
 
 def _chip(outcome, when, pending=False):
     if outcome in OUTCOME_WORD:
-        return f'<span class="chip {outcome}"><small>{esc(when)}:</small> {OUTCOME_WORD[outcome]}</span>'
+        return (f'<span class="chip {outcome}" title="{esc(when)}: {OUTCOME_WORD[outcome]}">'
+                f'<span class="sr">{esc(when)}: </span>{CHIP_WORD[outcome]}</span>')
     word = "re-check after you publish" if pending else "not run"
-    return f'<span class="chip na"><small>{esc(when)}:</small> {word}</span>'
+    return f'<span class="chip na"><span class="sr">{esc(when)}: </span>{word}</span>'
 
 
 def _task_receipts(t, when):
@@ -308,15 +410,14 @@ def _task_receipts(t, when):
     return links
 
 
+# ---------- what's broken ----------
+
 def section_broken(scan, after_scan) -> str:
-    head = ('<h2>What\'s broken</h2><p class="lede">Problems that stop assistants from reading your site, '
-            'biggest first. Each one links to the proof we saved.</p>')
+    head = '<h2>What\'s broken</h2><p class="note">Biggest first. Open any row for the proof we saved.</p>'
     if not scan:
         return f'<section class="block wrap" id="broken">{head}{_empty("The website check has not run yet.")}</section>'
-    checks = [c for c in _list(scan.get("checks")) if isinstance(c, dict)]
+    checks, fails = _failing(scan)
     after_status = {c.get("id"): c.get("status") for c in _list(_dict(after_scan).get("checks")) if isinstance(c, dict)}
-    fails = [c for c in checks if c.get("status") in ("fail", "warn")]
-    fails.sort(key=lambda c: (SEV_ORDER.get(c.get("severity"), 3), 0 if c.get("status") == "fail" else 1))
     passed = sum(1 for c in checks if c.get("status") == "pass")
     if not fails:
         body = _empty("Nothing broken. Assistants can read everything we checked.")
@@ -330,83 +431,186 @@ def section_broken(scan, after_scan) -> str:
             link = f'<a href="{href}">See the proof</a>' if href else ""
             if not link and safe_url(r.get("url")):
                 link = _ext_link(r.get("url"), "See the page")
-            if after_status.get(c.get("id")) != "pass":
-                fixed = ""
-            elif c.get("fixable") is False or not c.get("fix_id"):
-                # Not something a file can fix (e.g. a bot wall at the host): our copy simply has no wall.
-                fixed = (' <span class="fixed">Needs a setting change by you or your website host;'
-                         ' our test copy shows what happens after</span>')
+            if c.get("fixable") is False or not c.get("fix_id"):
+                # Not something a file can fix (e.g. a bot wall at the host): it needs the owner or the host.
+                status = ('<span class="tag host">Needs a setting change by you or your website host</span>'
+                          if after_status.get(c.get("id")) == "pass" or c.get("fixable") is False else "")
+            elif after_status.get(c.get("id")) == "pass":
+                status = '<span class="tag fixed">Fixed in our test copy</span>'
             else:
-                fixed = ' <span class="fixed">Fixed in our test copy</span>'
-            rows.append(f'<li class="finding sev-{sev}"><div class="top"><h3>{esc(c.get("title") or c.get("id") or "Problem")}</h3>'
-                        f'<span class="sev">{SEV_WORD[sev]}</span>{fixed}</div>'
-                        f'<p>{esc(c.get("detail") or "")}</p>'
-                        + (f'<blockquote class="excerpt">{esc(excerpt)}</blockquote>' if excerpt else "")
-                        + (f'<div class="receipts">{link}</div>' if link else "") + "</li>")
-        body = f'<ul class="findings">{"".join(rows)}</ul>'
+                status = '<span class="tag">Fix included</span>' if c.get("fix_id") else ""
+            title = c.get("title") or c.get("id") or "Problem"
+            name = PROBLEM.get(c.get("id"), title)
+            body_parts = [f'<p>{esc(c.get("detail") or "")}</p>' if c.get("detail") else ""]
+            if name != title:
+                body_parts.append(f'<p class="muted">What we checked: {esc(title)}</p>')
+            if c.get("fixable") is False and after_status.get(c.get("id")) == "pass":
+                body_parts.append('<p class="muted">Our test copy has no wall, so the numbers above show what happens after.</p>')
+            if excerpt:
+                body_parts.append(f'<blockquote class="excerpt">{esc(excerpt)}</blockquote>')
+            if link:
+                body_parts.append(f'<p class="receipts">{link}</p>')
+            summary = (f'<span class="sev"><span class="pip" aria-hidden="true"></span>{SEV_WORD[sev]}</span>'
+                       f'<span class="r-title">{esc(name)}</span>{status}')
+            rows.append(_row(f"finding sev-{sev}", summary, "".join(body_parts)))
+        body = f'<div class="rows">{"".join(rows)}</div>'
     tail = f'<p class="passed">{passed} of {len(checks)} checks passed.</p>' if checks else ""
     return f'<section class="block wrap" id="broken">{head}{body}{tail}</section>'
 
+
+# ---------- found ----------
 
 def section_find(find, after_find) -> str:
     head = '<h2>When a customer asked an assistant</h2>'
     if not find:
         return f'<section class="block wrap" id="found">{head}{_empty("We have not asked an assistant about you yet.")}</section>'
-    name_note = esc(find.get("agent") or "An AI assistant")
+    agent = esc(find.get("agent") or "An AI assistant")
     visible = find.get("visible")
-    verdict = ('<div class="verdict yes">You were suggested.</div>' if visible is True else
-               '<div class="verdict no">You were not suggested.</div>' if visible is False else "")
+    verdict = ('<span class="tag fixed">You were suggested</span>' if visible is True else
+               '<span class="tag bad">You were not suggested</span>' if visible is False else "")
     recs = [r for r in _list(find.get("recommendations")) if isinstance(r, dict)]
     rec_html = ""
     if recs:
         lis = "".join(f'<li><strong>{_ext_link(r.get("url"), r.get("name") or r.get("url")) if r.get("url") else esc(r.get("name"))}</strong>'
-                      + (f' <span class="why">{esc(r.get("why"))}</span>' if r.get("why") else "") + "</li>" for r in recs)
-        rec_html = f'<p>{"It suggested these instead:" if visible is False else "It suggested:"}</p><ol class="recs">{lis}</ol>'
-    after = ""
+                      + (f' <span class="why-full">{esc(r.get("why"))}</span>' if r.get("why") else "") + "</li>" for r in recs)
+        label = "Who it suggested instead" if visible is False else "Who it suggested"
+        rec_html = _row("recs", f'<span class="r-title">{label} ({len(recs)})</span>', f'<ol class="recs">{lis}</ol>')
+    proof = receipt_href(find.get("receipt"))
+    proof_html = f' <a href="{proof}">Its full reply</a>' if proof else ""
     if after_find and isinstance(after_find.get("visible"), bool):
-        after = f'<p class="passed">After the fixes, on our test copy: {"suggested" if after_find["visible"] else "still not suggested"}.</p>'
+        after = f'After the fixes, on our test copy: {"suggested" if after_find["visible"] else "still not suggested"}.'
     else:
-        after = ('<p class="passed">Assistants take time to notice changes. Re-check this after you publish the fixes.</p>')
-    return (f'<section class="block wrap" id="found">{head}<div class="ask"><div>{name_note} was asked:</div>'
-            f'<div class="query">&ldquo;{esc(find.get("query") or "")}&rdquo;</div>{verdict}{rec_html}</div>{after}</section>')
+        after = "Assistants take weeks to notice changes. Re-check this after you publish the fixes."
+    return (f'<section class="block wrap" id="found">{head}<div class="ask"><p class="asker">{agent} was asked:</p>'
+            f'<p class="query">&ldquo;{esc(find.get("query") or "")}&rdquo;</p><p class="verdict">{verdict}{proof_html}</p></div>'
+            f'{rec_html}<p class="passed">{after}</p></section>')
+
+
+# ---------- fixes ----------
+
+FIX_WHAT = {
+    "llms_txt": "A short guide that tells assistants what you do",
+    "robots_ai": "Lets AI assistants read your site",
+    "jsonld_business": "Labels your name, address and phone",
+    "jsonld_hours": "Labels your opening hours",
+    "jsonld_offers": "Labels what you sell",
+    "contact_machine_readable": "Makes your phone and address easy to pick up",
+    "form_labels": "Names the boxes on your forms",
+    "img_alt": "Adds text descriptions to your pictures",
+}
+
+# Where each kind of fix file goes, for files CHANGES.md does not describe.
+WHERE_DEFAULT = {
+    "llms.txt": "Upload to the root of your website.",
+    "robots.txt": "Replace the robots.txt at the root of your website.",
+    "agent.json": "Upload to yoursite.com/.well-known/agent.json (optional).",
+    "jsonld.html": "Paste inside the <head> of your homepage.",
+}
+
+
+def _fix_items(changes: str | None):
+    """Parse '### Title (`id`, sev)' blocks with **File:** and **Where to paste:** lines, grouped by file."""
+    items = {}
+    if not changes:
+        return items
+    for block in re.split(r"(?m)^###\s+", changes)[1:]:
+        first = block.split("\n", 1)[0]
+        cid = re.search(r"\(`([^`]+)`", first)
+        title = FIX_WHAT.get(cid.group(1) if cid else "", re.sub(r"\s*\(`[^`]*`[^)]*\)\s*$", "", first).strip())
+        f = re.search(r"\*\*File:\*\*\s*`?([^`\n]+?)`?\s*$", block, re.M)
+        w = re.search(r"\*\*Where to paste:\*\*\s*(.+)$", block, re.M)
+        if not f:
+            continue
+        key = f.group(1).strip().replace("\\", "/")
+        key = key[len("fixes/"):] if key.startswith("fixes/") else key
+        it = items.setdefault(key, {"what": [], "where": None})
+        if title and title not in it["what"]:
+            it["what"].append(title)
+        if w and not it["where"]:
+            it["where"] = w.group(1).strip()
+    return items
 
 
 def section_fixes(run_dir: Path) -> str:
-    head = ('<h2>The fixes we built</h2><p class="lede">Ready to hand to whoever runs your website. '
-            'One of them is a hidden label (called JSON-LD) that tells assistants your hours and menu.</p>')
+    head = ('<h2>Your fix package</h2><p class="note">Hand this to whoever runs your website. '
+            'Each file goes in one place.</p>')
     changes = _load_text(run_dir / "fixes" / "CHANGES.md")
     owner = _load_text(run_dir / "fixes" / "needs-owner.md")
-    left = (f'<div class="md">{markdown(changes)}{_file_list(run_dir)}</div>' if changes
-            else _empty("No fixes yet. They appear here after the fix step runs."))
-    right = (f'<div class="md owner"><h3>Questions only you can answer</h3>{markdown(owner)}</div>' if owner
-             else '<div class="md owner"><h3>Questions only you can answer</h3><p>'
-             + ("None right now." if changes else "These appear after the fix step runs.") + '</p></div>')
-    return f'<section class="block wrap" id="fixes">{head}<div class="cols">{left}{right}</div></section>'
+    files = _fix_files(run_dir)
+    if not changes and not files:
+        left = _empty("No fixes yet. They appear here after the fix step runs.")
+    else:
+        parsed = _fix_items(changes)
+        rels = {r for r, _ in files}
+        # Described fixes first, in CHANGES.md order; skip a .json twin of an .html snippet.
+        order = {k: i for i, k in enumerate(parsed)}
+        ordered = sorted((f for f in files if not f[0].endswith(".md")
+                          and not (f[0].endswith(".json") and f[0][:-5] + ".html" in rels)),
+                         key=lambda f: (order.get(f[0], 99), f[0]))
+        lis = []
+        for rel, href in ordered:
+            it = parsed.get(rel, {})
+            whats = it.get("what", [])
+            if not whats:
+                what = _file_purpose(rel)
+            elif len(whats) == 1:
+                what = whats[0]
+            elif len(whats) == 2:
+                what = whats[0] + " and " + whats[1][:1].lower() + whats[1][1:]
+            else:
+                what = _file_purpose(rel) + f" (fixes {len(whats)} problems)"
+            where = it.get("where") or WHERE_DEFAULT.get(rel.rsplit("/", 1)[-1], "Your web person will know where this goes.")
+            lis.append(f'<li><div class="f-what">{esc(what)}</div><div class="f-where">{esc(where)}</div>'
+                       f'<a class="file" href="{href}">{esc(rel)}</a></li>')
+        notes = [f'<a href="{h}">{esc(r)}</a>' for r, h in files if r.endswith(".md")]
+        full = (_row("notes", '<span class="r-title">Full notes on every change</span>',
+                     f'<div class="md">{markdown(changes)}</div>') if changes else "")
+        left = ((f'<ol class="checklist">{"".join(lis)}</ol>' if lis else "")
+                + (f'<p class="receipts"><span>Guides for your web person:</span> {"".join(notes)}</p>' if notes else "")
+                + full)
+    right = ('<aside class="owner"><h3>Questions only you can answer</h3>'
+             + (f'<div class="md">{markdown(_drop_title(owner))}</div>' if owner
+                else "<p>" + ("None right now." if changes else "These appear after the fix step runs.") + "</p>")
+             + "</aside>")
+    return f'<section class="block wrap" id="fixes">{head}<div class="cols">{left and f"<div>{left}</div>"}{right}</div></section>'
 
 
-def _file_list(run_dir: Path) -> str:
+def _drop_title(md: str) -> str:
+    """The aside already has a heading; drop the file's own leading '# ...' line."""
+    return re.sub(r"^\s*#[^\n]*\n", "", md, count=1)
+
+
+def _file_purpose(rel: str) -> str:
+    name = rel.rsplit("/", 1)[-1]
+    return {"llms.txt": "A short guide that tells assistants what you do",
+            "robots.txt": "Lets AI assistants read your site",
+            "agent.json": "A card listing what an assistant can do on your site",
+            "jsonld.html": "A hidden label with your business facts",
+            "jsonld.json": "The same hidden label, as a plain data file"}.get(name, "Fix file")
+
+
+def _fix_files(run_dir: Path):
     fixes = run_dir / "fixes"
     try:
-        files = sorted(p for p in fixes.rglob("*") if p.is_file() and p.name not in ("CHANGES.md", "needs-owner.md"))
+        found = sorted(p for p in fixes.rglob("*") if p.is_file() and p.name not in ("CHANGES.md", "needs-owner.md"))
     except OSError:
-        return ""
-    links = []
-    for p in files[:40]:
-        rel = p.relative_to(run_dir).as_posix()
-        href = receipt_href(rel)
+        return []
+    out = []
+    for p in found[:40]:
+        href = receipt_href(p.relative_to(run_dir).as_posix())
         if href:
-            links.append(f'<a href="{href}">{esc(p.relative_to(fixes).as_posix())}</a>')
-    return f'<div class="filelist receipts">Fix files: {"".join(links)}</div>' if links else ""
+            out.append((p.relative_to(fixes).as_posix(), href))
+    return out
 
 
 def section_footer(scan, do, find) -> str:
     when = [esc(x) for x in (_dict(scan).get("fetched_at"), _dict(do).get("ran_at"), _dict(find).get("asked_at")) if x]
-    stamp = f"<p>Checked {when[0][:10]}.</p>" if when else ""
+    stamp = f" Checked {when[0][:10]}." if when else ""
     return f"""<footer class="wrap"><h3>How this was checked</h3>
 <ul><li>Read-only. We never ordered, paid, signed up or sent a form on your website.</li>
 <li>Fixes were tried on a private copy of your site, not the live one.</li>
-<li>Every problem above links to a saved receipt: the page text, a screenshot or the assistant's reply.</li></ul>
-{stamp}<p>Made with Landfall.</p></footer>"""
+<li>Every problem links to a saved receipt: the page text, a screenshot or the assistant's reply.</li></ul>
+<p>Made with Landfall.{stamp}</p></footer>"""
 
 
 def render(run_dir) -> str:
