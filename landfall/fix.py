@@ -299,6 +299,8 @@ def build_jsonld(scan: dict, page_text: str = "", links: list | None = None) -> 
     else:
         questions.append("What is the street address (or service area, if you have no storefront)?")
     hours_text = (facts.get("hours_text") or "").strip()
+    if "|" in hours_text:  # the same footer hours often repeat across a page; show each distinct span once
+        hours_text = " | ".join(dict.fromkeys(p.strip() for p in hours_text.split("|") if p.strip()))
     specs = parse_hours(hours_text)
     if specs:
         ld["openingHoursSpecification"] = specs
@@ -929,6 +931,12 @@ def run(run_dir: str | Path) -> dict:
         applied.append("No mirror found; fix files generated but not applied (run landfall.mirror first).")
 
     # ---- needs-owner
+    if (run_dir / "products.json").exists():  # the product worker already listed real prices
+        try:
+            if json.loads((run_dir / "products.json").read_text(encoding="utf-8")).get("products"):
+                questions = [q for q in questions if not q.startswith("Prices are not included")]
+        except (OSError, ValueError):
+            pass
     nq = ["# Questions for the owner", "",
           "We only used facts we found on your website. Answer these and we will add them.", ""]
     nq += [f"{i}. {q}" for i, q in enumerate(questions, 1)]

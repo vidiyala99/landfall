@@ -107,7 +107,7 @@ deep = false
 goal = "Order a sympathy arrangement for same-day delivery in Beaver Dam"
 tasks = [
   "Find the shop phone number",
-  "Find the price of a mixed bouquet",
+  "Find the price of the 'Lots of Love' arrangement",
   "Find whether same-day delivery is offered and the order cutoff",
   "Find the shop hours",
 ]
