@@ -33,7 +33,10 @@ mcp = FastMCP(
         "Landfall checks whether AI agents can find, read and use a small business's website, then builds the "
         "fixes and proves them with a before/after rerun. Use make_agent_ready for a full job (several minutes; "
         "poll job_status), quick_check for a 30-second read-only scan. Landfall is read-only on real websites: it "
-        "never submits forms, books or buys. Share the report link with the business owner."
+        "never submits forms, books or buys. Share the report link with the business owner. "
+        "STYLE FOR YOUR REPLY: the person is a busy small-business owner. Answer in at most 5 short lines: lead with "
+        "the tool's `owner_summary` (the one biggest problem, in plain words), then the before -> after numbers on one "
+        "line, then one next step, then the report link. No tables, no headings, no jargon. Offer details only if asked."
     ),
     stateless_http=True,
 )
@@ -79,6 +82,22 @@ def job_status(slug: str) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def owner_summary(res: dict) -> str:
+    """Three plain lines for a busy owner, built from the run's own numbers (no new claims)."""
+    probs = res.get("top_problems") or []
+    top = probs[0]["detail"] if probs else "Assistants could read your basic facts."
+    rd = res.get("read") or {}
+    fe = (res.get("do_fetch") or {})
+    b, a = (fe.get("before") or (res.get("do") or {}).get("before")), (fe.get("after") or (res.get("do") or {}).get("after"))
+    line2 = f"Readable by assistants: {rd.get('before')} -> {rd.get('after')} of 100."
+    if b and a:
+        line2 += f" Customer tasks an assistant could finish: {b.get('done')} -> {a.get('done')} of {b.get('total')}."
+    found = res.get("visible")
+    line3 = ("When a customer asked an assistant, you were recommended." if found else
+             "When a customer asked an assistant, you were not recommended." if found is False else "")
+    return " ".join(x for x in (top, line2, line3) if x)
+
+
 @mcp.tool()
 def get_report(slug: str) -> dict:
     """Before/after scores, the top problems agents hit (each with a receipt), and the fix package summary."""
@@ -87,6 +106,7 @@ def get_report(slug: str) -> dict:
         return {"slug": slug, "status": "no results yet"}
     res = summarize(d)
     res["report"] = _report_link(slug)
+    res["owner_summary"] = owner_summary(res)
     owner = d / "fixes" / "needs-owner.md"
     if owner.exists():
         res["questions_for_owner"] = owner.read_text(encoding="utf-8")[:1500]
@@ -113,13 +133,13 @@ def quick_check(url: str) -> dict:
 async def report_page(request: Request) -> Response:
     slug = request.path_params["slug"]
     page = RUNS / slug / "report.html"
-    if page.exists():
-        return FileResponse(page)
     try:
         from landfall import report
         html = report.render(RUNS / slug)
         return HTMLResponse(html)
     except Exception as e:  # noqa: BLE001
+        if page.exists():
+            return FileResponse(page)
         return JSONResponse({"slug": slug, "status": "report not ready", "error": str(e)[:200]})
 
 
