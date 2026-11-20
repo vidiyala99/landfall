@@ -1,0 +1,115 @@
+# Landfall targets. Verified 2026-11-20 via TinyFish fetch (rendered text + page metadata). Read-only.
+
+[[site]]
+slug = "3cs-bakery"
+name = "3 C's Bakery"
+url = "https://3cbakery.com"
+city = "New Franklin"
+state = "OH"
+category = "bakery"
+builder = "WordPress (Divi 4.11.1)"
+deep = true
+goal = "Order a custom birthday cake or a dozen custom cupcakes for a weekend pickup"
+tasks = [
+  "Find the bakery's opening hours and pickup days",
+  "Find the price of a dozen custom cupcakes",
+  "Find how to place a custom cake order",
+  "Find the lead time needed for a custom cake",
+]
+visibility_query = "bakery near Akron Ohio that does custom birthday cakes and cupcakes"
+notes = "Family bakery est. 2020, serving Summit and Stark Counties. Homepage loads (https://3cbakery.com). Homepage text lists services (custom cupcakes, cakes, cookies, cake toppers, emergency baking) but NO prices, NO hours, NO lead time, NO order form; only a phone (330-319-0066) and orders@3cbakery.com. Popular Baked Goods and special-offer headings are empty in text (likely images). Last site edit 2021. Agent blockers: no machine-readable hours or menu, ordering is phone/email only, key info likely in images."
+
+[[site]]
+slug = "hanna-plumbing"
+name = "Hanna Plumbing & Heating"
+url = "https://hannaplumbingheating.com"
+city = "Marion"
+state = "IA"
+category = "plumber"
+builder = "WordPress"
+deep = false
+goal = "Get a free quote for a water heater replacement and find out if they do same-day emergency service"
+tasks = [
+  "Find the phone number for emergency plumbing",
+  "Find how to request a free quote",
+  "Find which cities they serve",
+  "Find whether they charge by the hour or by commission",
+]
+visibility_query = "family owned plumber in Marion Iowa who can replace a water heater"
+notes = "Family-owned since 2003. Homepage loads (https://hannaplumbingheating.com). Quote is a web form (form fields not visible in text); phone 319-377-2809. Homepage has no business hours or service-area list in text (service areas on /contact). Search snippets show 24/7 emergency claim and free estimates over $500 on inner pages. Blockers: quote form only, hours absent from homepage, brand logos as images."
+
+[[site]]
+slug = "saam-vet"
+name = "Saam Veterinary Clinic"
+url = "https://www.saamveterinaryclinic.com"
+city = "Basin"
+state = "WY"
+category = "vet clinic"
+builder = "Squarespace"
+deep = false
+goal = "Request a wellness exam and vaccines for a new puppy, or arrange a farm call"
+tasks = [
+  "Find the clinic phone number and call hours",
+  "Find how to request an appointment",
+  "Find whether drop-off appointments are offered",
+  "Find the price of the puppy vaccine package",
+]
+visibility_query = "large and small animal vet in Basin Wyoming that does farm calls"
+notes = "Since 2003, mixed large and small animal. Homepage loads. Text says phone (307) 568-9305, 7:30am-5:30pm, request form says requested time may not be available (they call back). Puppy/kitten package pricing is mentioned but no prices in text. Online store via VetSource (third-party). Blockers: appointment is a request form with callback, prices missing, no weekend/closed-day hours, pricing likely in images."
+
+[[site]]
+slug = "kingston-barber"
+name = "Kingston Barber Shop"
+url = "https://kingstonbarbershop.com"
+city = "Kingston"
+state = "TN"
+category = "barber"
+builder = "Custom / site-builder (no generator tag)"
+deep = false
+goal = "Get a kid's haircut and book ahead with Aaron, or know whether to just walk in"
+tasks = [
+  "Find the shop address",
+  "Find the phone number for Jamey and for Aaron",
+  "Find how to book ahead with Aaron",
+  "Find the price of a haircut and the shop opening hours",
+]
+visibility_query = "walk-in barber shop in Kingston Tennessee good with kids"
+notes = "Since 1978, 205 E Race St. Homepage loads (https://kingstonbarbershop.com, redirects http to https). Walk-ins for Jamey; Aaron books via a QR code (agent cannot scan a QR). Prices described only as 'reasonable' with no numbers and no shop hours in the page text. Blockers: QR-code booking, no prices, no hours text."
+
+[[site]]
+slug = "rays-automotive"
+name = "Ray's Automotive Repair"
+url = "https://raysautomotiveatx.wixsite.com/raysautomotive"
+city = "Arlington"
+state = "TX"
+category = "auto repair"
+builder = "Wix"
+deep = false
+goal = "Get an oil change and brake check this week and know when they are open"
+tasks = [
+  "Find opening hours for Saturday",
+  "Find the shop address",
+  "Find whether state inspections are offered",
+  "Find how to contact the shop to book a brake service",
+]
+visibility_query = "independent auto repair shop in Arlington Texas that does brakes and state inspection"
+notes = "Homepage loads. Hours in text: Mon-Fri 8-6, Sat 9-6, Sun closed. Address 2411 W Division St, Arlington TX 76012; contact is email only (raysautomotiveatx@gmail.com), no phone in page text, no booking, no prices. Services listed as headings only. Blockers: Wix subdomain URL, no phone/booking, no prices, contact is email only. Operating status not independently confirmed beyond live site."
+
+[[site]]
+slug = "small-town-blooms"
+name = "Small Town Blooms"
+url = "https://smalltownbloomsky.com"
+city = "Beaver Dam"
+state = "KY"
+category = "florist"
+builder = "Floranext (Magento storefront)"
+deep = false
+goal = "Order a sympathy arrangement for same-day delivery in Beaver Dam"
+tasks = [
+  "Find the shop phone number",
+  "Find the price of a mixed bouquet",
+  "Find whether same-day delivery is offered and the order cutoff",
+  "Find the shop hours",
+]
+visibility_query = "florist in Beaver Dam Kentucky with same day delivery for funeral flowers"
+notes = "Homepage loads (took ~15s) but rendered text is only navigation and an empty 'Product Set': products, prices and hours are JS-rendered and invisible to a plain fetch. Phone (270) 363-2181 in header/meta. Strong agent-blocker example (slow, JS-only catalog, third-party commerce platform). Owner independence is inferred from the name and local phone, not verified."
