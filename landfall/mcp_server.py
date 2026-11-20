@@ -147,8 +147,10 @@ def main() -> None:
     from urllib.parse import urlparse
     from mcp.server.transport_security import TransportSecuritySettings
     public_host = urlparse(PUBLIC_URL).netloc
+    # Behind the Agent37 edge the Host header is the container's internal IP, so host checks can't work there;
+    # the unguessable public URL is the credential. Locally (127.0.0.1) the protection stays on.
     mcp.settings.transport_security = TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
+        enable_dns_rebinding_protection=a.host in ("127.0.0.1", "localhost"),
         allowed_hosts=[public_host, f"127.0.0.1:{a.port}", f"localhost:{a.port}"],
         allowed_origins=[f"https://{public_host}", "https://claude.ai", "https://claude.com"],
     )
