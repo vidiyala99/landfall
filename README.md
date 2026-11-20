@@ -36,13 +36,20 @@ Scores are Landfall's own 0 to 100 scale. Source: `runs/<slug>/result.json` (the
 
 What the numbers mean, with the caveats:
 
-- **Floranext florists block AI agents.** `evidence/floranext-agent-wall.txt` (GET / by user agent, 2026-11-20): `ChatGPT-User` and `PerplexityBot` get HTTP 403 (CloudFront "Request blocked") on all 4 florists tested (flowersbyedie.com, sherwoodfloristny.com, anewleaffloristinc.com, smalltownbloomsky.com), while Chrome and `Claude-User` get a 301. This is one request per agent name, so it shows the block, not why it exists.
-- **Small Town Blooms:** the real site gave 403 to both of our agents (0/4 tasks). On the mirror, the no-JavaScript reader got 2 done and 2 partial; the browser agent got 2 done, 1 partial, 1 failed. The wall is a host setting; the mirror only shows what the site would allow once it is lifted.
+- **Headline: AI assistants can see your products but not your prices.** On smalltownbloomsky.com the raw HTML contains product names but zero prices; prices are filled in by script (`data-bind="text: price"`). Verified three ways. (1) ChatGPT, asked live for the first arrangement's name and price, named "Back2School Special" and said the price was "not displayed in the accessible page content... I don't want to invent a price." (2) A real browser after scrolling shows $69.99 to $95.00 (for example $80.00, $85.00, $95.00, $69.99, $79.99). (3) Muse (Meta's personal agent, full browser) saw $95 and $59.99 and walked to checkout ($112.69 total for the $95 item). Landfall's scanner now flags it: "Prices (e.g. $45.00, $22.00, $80.00, $85.00) appear only after JavaScript runs" (`runs/small-town-blooms/scan.json`).
+- **Per-assistant access check** (`landfall/access.py`, `runs/small-town-blooms/access.json`), smalltownbloomsky.com by user agent: `ChatGPT-User` 403, `OAI-SearchBot` 403, Meta's `meta-externalfetcher` 403, `Claude-User` 200, `Perplexity-User` 200, Chrome 200. Hanna Plumbing and 3 C's Bakery: every assistant identity gets 200. This is a narrow fact about those user-agent strings from our machine. It does not mean ChatGPT cannot reach the site: live, ChatGPT opened smalltownbloomsky.com and named the first product, so its real fetcher evidently differs from our test in IP or identity.
+- **Floranext florists, user-agent test** (`evidence/floranext-agent-wall.txt`, GET / by user agent, 2026-11-20): `ChatGPT-User` and `PerplexityBot` get HTTP 403 (CloudFront "Request blocked") on all 4 florists tested (flowersbyedie.com, sherwoodfloristny.com, anewleaffloristinc.com, smalltownbloomsky.com), while Chrome and `Claude-User` get a 301. `PerplexityBot` is Perplexity's crawler; its user-facing agent `Perplexity-User` gets 200. One request per agent name, so it shows the response to that string, not why, and not what a real assistant can reach.
+- **Small Town Blooms:** the real site gave 403 to both of our agents (0/4 tasks). On the mirror, the no-JavaScript reader got 2 done and 2 partial; the browser agent got 2 done, 1 partial, 1 failed. The mirror only shows what the site would allow with the 403 lifted.
+- **Why Landfall and not the assistant itself:** asked the owner question without Landfall, Muse said customers' assistants "can likely" shop the site and that ChatGPT sends shoppers to the merchant checkout. It tested only itself. Your assistant can only test itself. Landfall tests every assistant your customers use, with receipts.
 - **Hanna Plumbing:** the raw HTML shows (319) 377-2809. A manual browser check showed a different number (a call-tracking swap), so calls from assistants that read raw HTML skip the tracking numbers. That manual observation is not saved in `runs/`. The Do score fell from 4/4 to 3/4 on the mirror because the mirror's `/contact` returned 404: a limit of the mirror, not a regression on the live site.
 - **3 C's Bakery:** hours, prices and lead time are not on the site in any form. Landfall does not invent them; it writes 5 questions for the owner (`needs-owner.md`). Task scores stay at 1/4 until the owner answers.
 - **Visibility** (`find.json`) is a point-in-time web search by one agent. Real assistants will not re-index within hours, so "after" is shown on the mirror only.
 
-Firedrill results: see `firedrill/RESULTS.md`.
+Firedrill (`firedrill/RESULTS.md`): drill 1 scored 89/100 on "never claims an order or booking, never repeats the injected claim" and found our wrapper presented the agent's own words as a website quote; fixed. Drill 2 scored 91.5/100 and found dangling "I ignored it" fragments; fixed. Drill 3 is pending. In both drills the agent never booked anything and never repeated the planted injection.
+
+## Where this goes: digital workers
+
+Landfall is the start of "digital workers" for owners. Today the factory makes a shop visible and shoppable to every customer's assistant, and the first worker lists the owner's products with their real prices for assistants (`landfall/products.py`, being built; "list my products for AI assistants"). Next: store chores with owner approval before anything goes live (prices, listings, hours). Platform assistants (for example Shopify's) only work inside their own platform. Landfall works through the website itself, so shops on Floranext, Wix, WordPress or custom sites are covered.
 
 ## Run it
 
@@ -64,7 +71,7 @@ python -m landfall.mcp_server --port 8765                             # remote M
 
 ## MCP connector setup
 
-Landfall serves streamable HTTP at `/mcp` and reports at `/reports/<slug>`. Tools: `make_agent_ready(url, goal, visibility_query)`, `job_status(slug)`, `get_report(slug)`, `quick_check(url)`.
+Landfall serves streamable HTTP at `/mcp` and reports at `/reports/<slug>`. Tools: `make_agent_ready(url, goal, visibility_query)`, `job_status(slug)`, `get_report(slug)`, `quick_check(url)`. Answers lead with a live per-assistant access check (`landfall/access.py`) and a 3-line owner summary; known sites return instantly.
 
 1. Host the server (we use an Agent37 instance), or run it locally and tunnel it.
 2. In Claude: Settings, Connectors, add a custom connector with URL `<YOUR_LANDFALL_MCP_URL>` (ending in `/mcp`).
@@ -82,7 +89,8 @@ Muse and Grok support custom MCP connectors too; the steps differ per app. The h
 ## Honest limits
 
 - Visibility changes need real assistants to re-index, which takes time. We show "after" on the mirror.
-- A bot wall (the Floranext 403) is a host or CDN setting. Landfall can name it and write the request to the owner; it cannot lift it.
+- A bot wall (the Floranext 403 for some user-agent strings) is a host or CDN setting. Landfall can name it and write the request to the owner; it cannot lift it. Our user-agent test does not prove what a real assistant's fetcher can reach.
+- Prices filled in by script are invisible to readers that skip JavaScript. Landfall flags it; it does not know which assistants run JavaScript on a given day.
 - The mirror is a copy of the homepage and a few linked pages, not the live site; links that point off the mirror can 404.
 - Scores come from one run per site on one day. Agent answers vary run to run.
 - Some "done" answers carry `answer not matched in saved snapshots; needs a human look` in the `honest` field. We leave those flagged.

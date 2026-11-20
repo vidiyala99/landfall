@@ -7,3 +7,6 @@ smalltownbloomsky.com        403 301 403 301
 
 # 403 body sample:
  ERROR: The request could not be satisfied 403 ERROR The request could not be satisfied. Request blocked. We can't connect to the server for this app or website at this time. There might be too much traffic or a configuration error. Try again later, or contact the app or website owner. If you provide content to customers through CloudFront, you can find steps to troubleshoot and help prevent this 
+# Correction (2026-11-20, later): the table above is what these user-agent strings get from our machine. It does not show that ChatGPT cannot reach these sites:
+# live, ChatGPT opened smalltownbloomsky.com and named the first product, so its real fetcher differs from our test (IP or identity).
+# PerplexityBot (crawler) gets 403, but Perplexity-User (user-facing agent) gets 200. See runs/small-town-blooms/access.json.
