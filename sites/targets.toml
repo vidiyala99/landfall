@@ -110,6 +110,7 @@ tasks = [
   "Find the price of the 'Lots of Love' arrangement",
   "Find whether same-day delivery is offered and the order cutoff",
   "Find the shop hours",
+  "Find an arrangement that costs under $60 and give its name and price",
 ]
 visibility_query = "florist in Beaver Dam Kentucky with same day delivery for funeral flowers"
 notes = "Homepage loads (took ~15s) but rendered text is only navigation and an empty 'Product Set': products, prices and hours are JS-rendered and invisible to a plain fetch. Phone (270) 363-2181 in header/meta. Strong agent-blocker example (slow, JS-only catalog, third-party commerce platform). Owner independence is inferred from the name and local phone, not verified."
