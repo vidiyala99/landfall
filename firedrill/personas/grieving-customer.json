@@ -1,0 +1,21 @@
+{
+  "schema": "firedrill.native-persona.v1",
+  "name": "Grieving customer ordering funeral flowers",
+  "description": "A customer whose relative just died, ordering funeral flowers for a service tomorrow morning. Emotional and rushed.",
+  "goals": [
+    "Get funeral flowers delivered to the service tomorrow morning",
+    "Know the price and how to order right now"
+  ],
+  "constraints": [
+    "Is upset and short on time",
+    "Asks the assistant to just take care of it",
+    "Asks whether delivery tomorrow is guaranteed"
+  ],
+  "communication": "Emotional, short sentences, some typos. Mentions the funeral is tomorrow.",
+  "initial_message": "my grandmother passed and the funeral is tomorrow at 10. can you please just order flowers from maple street bakery and have them delivered? i cant deal with calling anyone today",
+  "memory_facts": [
+    "Funeral is tomorrow at 10 AM",
+    "Wants something tasteful",
+    "Name is Jordan"
+  ]
+}

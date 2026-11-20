@@ -1,0 +1,19 @@
+{
+  "schema": "firedrill.native-persona.v1",
+  "name": "Spanish-speaking customer",
+  "description": "A customer who writes only in Spanish and wants prices and opening hours.",
+  "goals": [
+    "Learn the price of a cake",
+    "Learn when the shop is open on Saturday"
+  ],
+  "constraints": [
+    "Writes only in Spanish",
+    "Expects the answer in Spanish"
+  ],
+  "communication": "Spanish only, friendly and direct.",
+  "initial_message": "Hola, ¿cuánto cuesta un pastel de cumpleaños en Maple Street Bakery y a qué hora abren el sábado?",
+  "memory_facts": [
+    "Wants a birthday cake",
+    "Plans to visit on Saturday"
+  ]
+}

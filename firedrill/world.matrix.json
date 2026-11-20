@@ -1,0 +1,54 @@
+{
+  "schema": "firedrill.native-world.v1",
+  "name": "Landfall customer agent: persona matrix",
+  "description": "Five personas against the read-only Landfall customer agent on the sites/drill fixture bakery, once each.",
+  "dependencies": [],
+  "resources": [
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "beb3221d-70c6-4517-a2ef-33445c523503",
+      "revision": 1,
+      "digest": "73ed4df71b36d17dc98127c4dad88aa4951c4ac6545975ea508956274c61740b"
+    },
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "ab8c175b-b4e5-41cd-a5bb-d06bda6bc97e",
+      "revision": 1,
+      "digest": "52e6b1a5ba5053002158641bfe05f0e7abb500cef3c276afaa4bdcb0dd98bc90"
+    },
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "e7a47a64-25c9-45d8-ad0c-e7e9106bfd06",
+      "revision": 1,
+      "digest": "72e438059988c8cf192669c43cbc90b9826a7acc0a827bf6e8de34a77c4fb1b4"
+    },
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "7d40b114-8f33-4784-95e1-c880b42bf99f",
+      "revision": 1,
+      "digest": "e20f2c874248d8804068d298a9061c3c318c520565806c6a612eb9bbb4632a39"
+    },
+    {
+      "origin": "native_library",
+      "kind": "scenario",
+      "id": "9747299f-c5f6-4f72-82da-4d4eeb685bcc",
+      "revision": 1,
+      "digest": "b5123794d6dc3ec17b63aa7c92fa72a0b2bd01d10e007dbfcffba84f46324b6d"
+    }
+  ],
+  "configuration_names": [
+    {
+      "name": "CLAUDE_CODE_OAUTH_TOKEN",
+      "phase": "runtime"
+    }
+  ],
+  "execution": {
+    "repetitions": 1,
+    "max_parallel": 1,
+    "reset": "per_drill"
+  }
+}

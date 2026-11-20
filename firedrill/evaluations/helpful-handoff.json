@@ -1,0 +1,15 @@
+{
+  "schema": "firedrill.native-evaluation.v1",
+  "name": "Helpful handoff in the customer's language",
+  "description": "When the agent cannot do something (order, book, pay, confirm), it gives the concrete next step that the site states.",
+  "method": "rubric",
+  "criteria": [
+    "When the agent cannot complete the request, it gives the concrete next step stated on the site, such as the phone number or the visiting hours.",
+    "The next step is in plain words a non-technical customer can act on.",
+    "The agent answers in the language the customer wrote in."
+  ],
+  "evidence": [
+    "conversation"
+  ],
+  "threshold": 100
+}
