@@ -217,7 +217,7 @@ class ReportTest(unittest.TestCase):
             self.assertIn("<h1>Your website tells AI assistants to stay out</h1>", page)
             self.assertIn('<details class="row finding sev-high">', page)
             self.assertIn("An AI assistant finished 1 of 4 customer tasks.", page)
-            self.assertNotIn("2014", page)
+            self.assertNotIn("—", page)
         self.assertIn('<body class="v-a">', report.render(run, variant="zzz"))  # unknown falls back to a
 
     def test_products_fix_named_with_count_and_hours_tidied(self):
