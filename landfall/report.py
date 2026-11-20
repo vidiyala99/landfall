@@ -201,7 +201,7 @@ HEADLINES = {
     "bot_challenge": ("Some AI assistants are turned away at your door", "Requests that identify as certain assistants get an error page instead of your site."),
     "robots_ai": ("Your website tells AI assistants to stay out", "A setting on your site asks assistants like ChatGPT not to read it."),
     "nojs_content": ("Your website looks blank to AI assistants", "Your key facts only appear after a script runs, and most assistants never run it."),
-    "nojs_prices": ("AI assistants can't compare your prices", "Your shop pages list your products without prices until a script runs, so an assistant asked for \"something under $60\" finds nothing to compare."),
+    "nojs_prices": ("ChatGPT can't see your prices", "Your prices are tucked inside script data. Assistants that read your page text, like ChatGPT, see your flowers with no prices."),
     "jsonld_business": ("AI assistants can't be sure who you are", "Your name, address and phone are not labeled in a way assistants can read."),
     "facts_in_images_or_pdf": ("Your menu is locked where AI can't read it", "Your prices sit inside pictures or PDFs that assistants skip."),
     "menu_js": ("AI assistants can't see your menu", "Your menu only appears after a script runs, and most assistants never run it."),
