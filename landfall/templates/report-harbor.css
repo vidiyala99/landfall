@@ -1,0 +1,135 @@
+/* Harbor world (shared by harbor-a and harbor-b). Landfall: where ships come ashore.
+   Materials from the owner-approved Shipyard signage: carved varnished quarterboard with gilt heavy Clarendon,
+   slate tally in chalk, manila cargo tags on twine, yellow enamel plate. Crafted and well kept, never distressed.
+   One theme: harbor at dusk (it is a projector piece; the objects stay light and legible on the dark water). */
+body.v-harbor{
+  --night:#0d1c27; --sea:#143040; --chalk:#f1ece0; --chalk-2:#cfc6b2;
+  --gilt:#efc566; --gilt-deep:#b8893a; --wood:#5a3220; --wood-dark:#2b160a;
+  --manila:#ead3a2; --manila-2:#dcc08a; --tag-ink:#2a1d12; --twine:#c9a36b; --twine-dark:#8f6c3e;
+  --enamel:#f3b928; --enamel-ink:#1b2838; --brass:#c79a3c;
+  --rust:#9c3418; --amber-ink:#7a4d06; --blue-ink:#34506a; --green-ink:#2f5f2a;
+  --paper:var(--night); --surface:#173546; --ink:var(--chalk); --ink-2:var(--chalk-2);
+  --line:#2f4b5a; --line-2:#22404f; --accent:var(--gilt); --accent-soft:#3a2f15;
+  --good:#8fdca8; --good-soft:#15352a; --bad:#ffa58c; --bad-soft:#3b1f17; --warn:#f2c45a; --warn-soft:#3a2f15;
+  --display:"Big Shoulders Display","Atkinson Hyperlegible",system-ui,sans-serif;
+  --sign:"Ultra","Rockwell Extra Bold",serif;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  color-scheme:dark;
+  background:var(--night);color:var(--chalk);
+  font-size:clamp(17px,0.55vw + 10px,21px);
+}
+.v-harbor ::selection{background:var(--gilt);color:var(--wood-dark)}
+.v-harbor :focus-visible{outline:3px solid var(--enamel);outline-offset:3px}
+.v-harbor a{color:var(--gilt)}
+.v-harbor .biz{font:800 1.15em/1.1 var(--display);color:var(--chalk);letter-spacing:.01em;margin:0}
+.v-harbor .biz a{color:var(--chalk)}
+
+/* Quarterboard: the headline, carved and gilt */
+.qb{position:relative;margin:0;max-width:none;padding:clamp(16px,1.6vw,30px) clamp(44px,4.6vw,96px);border-radius:16px;
+  background:linear-gradient(180deg,rgb(255 214 160 / .14),rgb(0 0 0 / 0) 38%,rgb(0 0 0 / .3)),url(/static/harbor/wood.webp) center/520px auto,var(--wood);
+  box-shadow:inset 0 0 0 3px var(--wood-dark),inset 0 0 0 6px var(--gilt-deep),inset 0 0 0 8px var(--wood-dark),
+    inset 0 12px 20px rgb(255 220 170 / .1),inset 0 -14px 24px rgb(0 0 0 / .35),0 22px 44px -14px rgb(0 0 0 / .7),0 4px 10px rgb(0 0 0 / .35)}
+.qb::before,.qb::after{content:"";position:absolute;top:50%;width:clamp(14px,1.2vw,22px);aspect-ratio:1;border-radius:50%;transform:translateY(-50%);
+  background:radial-gradient(circle at 40% 35%,#ffe6a6,var(--gilt) 45%,var(--gilt-deep) 80%);box-shadow:0 1px 2px rgb(0 0 0 / .6)}
+.qb::before{left:clamp(16px,1.7vw,34px)}.qb::after{right:clamp(16px,1.7vw,34px)}
+.qb-face{display:block;font:400 clamp(25px,3.5vw,70px)/1.14 var(--sign);color:var(--gilt);letter-spacing:0;text-wrap:balance;
+  text-shadow:0 -1px 0 rgb(50 24 6 / .95),0 1px 0 rgb(255 236 180 / .3),0 3px 7px rgb(0 0 0 / .5)}
+.v-harbor .hero h1,.v-harbor h1.qb{font-size:inherit;max-width:none;letter-spacing:0}
+
+.v-harbor .sub{color:var(--chalk);font-size:clamp(17px,1.3vw,27px);line-height:1.4;max-width:78ch;text-shadow:0 1px 2px rgb(0 0 0 / .6)}
+
+/* Slate tally: Read / Do / Found, before and after, in chalk */
+.slate.board{margin:0;border:0;border-radius:0;background:url(/static/harbor/slate.webp) center/100% 100% no-repeat;
+  box-shadow:none;filter:drop-shadow(0 14px 18px rgb(0 0 0 / .55));padding:10px 22px;color:var(--chalk)}
+.slate .metric{padding:14px 22px 16px}
+.slate .metric + .metric{border-left:2px dashed rgb(241 236 224 / .22)}
+.slate .m-label{font:800 1.5em/1 var(--display);color:var(--chalk)}
+.slate .m-q{color:var(--chalk-2);font-size:.85em}
+.slate .nums{font-family:var(--display);margin-top:8px}
+.slate .nums .before{color:#ffb7a1;font-size:1.7em;font-weight:700}
+.slate .nums .after{color:#bdf2c8;font-size:clamp(44px,3.6vw,74px);font-weight:800;letter-spacing:0}
+.slate .nums .after.flat{color:var(--chalk)}
+.slate .nums .yes{color:#bdf2c8}.slate .nums .no{color:#ffb7a1}
+.slate .nums .unit{color:var(--chalk-2)}
+.slate .nums .pending{color:var(--enamel)}
+.slate .arrow{color:var(--chalk-2)}
+
+/* Yellow enamel plate: your to-do */
+.enamel{display:inline-grid;align-content:center;gap:4px;padding:18px 34px;border-radius:12px;text-decoration:none;color:var(--enamel-ink);
+  background:radial-gradient(circle at 12px 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) 12px,#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),
+    radial-gradient(circle at 12px calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),#7a5a1e 0 3px,#f6dc8f 4px 5px,transparent 6px),
+    linear-gradient(180deg,#f8cd4a,var(--enamel) 55%,#e2a414);
+  border:3px solid var(--brass);
+  box-shadow:inset 0 2px 0 rgb(255 255 255 / .45),inset 0 -3px 0 rgb(120 70 0 / .35),0 14px 28px -10px rgb(0 0 0 / .65);
+  transition:transform 160ms var(--ease-out)}
+.v-harbor a.enamel{color:var(--enamel-ink)}
+.enamel .e-k{font:800 1.9em/1 var(--display)}
+.enamel .e-v{font:700 1.05em/1.25 var(--body)}
+@media (hover:hover) and (pointer:fine){.enamel:hover{transform:translateY(-2px)}}
+.enamel:active{transform:scale(.97)}
+
+/* Cargo tags on twine: one per problem; open to turn the tag over */
+.cargo-line{list-style:none;margin:0;padding:34px 6px 18px;display:flex;flex-wrap:wrap;gap:22px clamp(14px,1.4vw,28px);align-items:flex-start;
+  background:repeating-linear-gradient(112deg,var(--twine) 0 7px,var(--twine-dark) 7px 10px) 0 10px / 100% 5px no-repeat local}
+.cargo{--r:0deg;position:relative;flex:0 0 clamp(220px,15.5vw,300px);transform:rotate(var(--r));transform-origin:50% -24px;
+  filter:drop-shadow(0 10px 12px rgb(0 0 0 / .45));transition:transform 220ms var(--ease-out)}
+.cargo:nth-child(4n+1){--r:-2.4deg}.cargo:nth-child(4n+2){--r:1.8deg}.cargo:nth-child(4n+3){--r:-1.2deg}.cargo:nth-child(4n+4){--r:2.6deg}
+.cargo::before{content:"";position:absolute;left:calc(50% - 1.5px);top:-24px;width:3px;height:46px;background:var(--twine);border-radius:2px;z-index:1}
+.cargo details{color:var(--tag-ink)}
+.cargo summary{list-style:none;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:10px;min-height:12.5em;padding:46px 20px 18px;
+  background:linear-gradient(180deg,#f0dcae,var(--manila) 40%,var(--manila-2));
+  clip-path:polygon(22% 0,78% 0,100% 13%,100% 100%,0 100%,0 13%)}
+.cargo summary::-webkit-details-marker{display:none}
+.eyelet{position:absolute;top:12px;left:calc(50% - 11px);width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle,#1b120a 0 4.5px,#9b5a33 5.5px 9px,#6f3d20 9.5px 10.5px,transparent 11px)}
+.stamp{align-self:flex-start;font:800 1.05em/1.15 var(--display);letter-spacing:.02em;padding:3px 10px;border:2.5px solid currentColor;border-radius:4px;transform:rotate(-3deg)}
+.cargo.sev-high .stamp{color:var(--rust)}.cargo.sev-med .stamp{color:var(--amber-ink)}.cargo.sev-low .stamp{color:var(--blue-ink)}
+.c-name{font:700 1.2em/1.22 var(--body);color:var(--tag-ink)}
+.cargo .tag{background:transparent;border:1.5px dashed currentColor;color:var(--blue-ink);font-size:.8em;max-width:none;align-self:flex-start}
+.cargo .tag.fixed{color:var(--green-ink)}.cargo .tag.host{color:var(--amber-ink)}
+.c-open{margin-top:auto;font-size:.82em;font-weight:700;color:#6b5236;display:flex;align-items:center;gap:8px}
+.c-open::after{content:"";width:8px;height:8px;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform 200ms var(--ease-out)}
+.cargo details[open] .c-open::after{transform:translateY(2px) rotate(-135deg)}
+.cargo details[open] .c-open{font-size:0}.cargo details[open] .c-open::before{content:"Proof";font-size:.82rem}
+.c-back{background:var(--manila-2);padding:4px 18px 18px;display:grid;gap:10px;font-size:.92em;color:var(--tag-ink);border-top:2px dashed rgb(42 29 18 / .3)}
+.c-back p{max-width:none}
+.v-harbor .c-back blockquote.excerpt{background:#f3e4c2;border-color:rgb(42 29 18 / .18);color:#3a2c1c;max-height:7.5em}
+.c-back .receipts{color:var(--tag-ink)}.c-back a{color:#7a2e12;font-weight:700}
+.cargo:has(details[open]){--r:0deg;z-index:2}
+.cargo summary:active{transform:scale(.985)}
+@media (hover:hover) and (pointer:fine){.cargo:hover{transform:rotate(calc(var(--r) * .3))}}
+.v-harbor .cargo .empty,.v-harbor .empty{border-color:var(--line);color:var(--chalk-2)}
+
+/* The one authored moment: tags swing onto the line, then the after-numbers land */
+@media (prefers-reduced-motion:no-preference){
+  .cargo{animation:swing-in 900ms var(--ease-out) backwards}
+  .cargo:nth-child(2){animation-delay:70ms}.cargo:nth-child(3){animation-delay:140ms}.cargo:nth-child(4){animation-delay:210ms}
+  .cargo:nth-child(5){animation-delay:280ms}.cargo:nth-child(n+6){animation-delay:350ms}
+}
+@keyframes swing-in{0%{opacity:0;transform:translateY(-18px) rotate(calc(var(--r) + 10deg))}
+  55%{opacity:1;transform:rotate(calc(var(--r) - 3deg))}80%{transform:rotate(calc(var(--r) + 1deg))}100%{transform:rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.cargo,.enamel,.c-open::after{transition:none}.cargo:hover{transform:rotate(var(--r))}}
+
+/* Below the dock: section heads carved in the sign face, rows on dark water */
+.v-harbor section.block h2{font:400 clamp(24px,2.2vw,40px)/1.15 var(--sign);color:var(--gilt);letter-spacing:0;text-shadow:0 2px 6px rgb(0 0 0 / .45)}
+.v-harbor .owner{background:var(--surface);border-color:var(--line)}
+.v-harbor .chip.done{background:#1d4a33;color:#bdf2c8}.v-harbor .chip.failed{background:#4a2218;color:#ffc2b0}.v-harbor .chip.partial{background:#4a3a14;color:#ffe08a}
+.v-harbor blockquote.excerpt{background:#102633;border-color:var(--line)}
+.v-harbor .md code,.v-harbor .md pre{background:#102633}
+.v-harbor footer{border-color:var(--line);color:var(--chalk-2)}
+.v-harbor footer h3{color:var(--chalk)}
+.v-harbor .checklist li::before{border-color:var(--gilt-deep);color:var(--gilt)}
+
+@media (max-width:700px){
+  .qb{padding:14px 30px;border-radius:12px}
+  .qb::before{left:10px}.qb::after{right:10px}
+  .qb::before,.qb::after{width:10px}
+  .slate.board{background:linear-gradient(180deg,#38444b,#2a3338);border-radius:12px;box-shadow:inset 0 0 0 3px #4d5a61;padding:4px 6px}
+  .slate .metric + .metric{border-left:0;border-top:2px dashed rgb(241 236 224 / .22)}
+  .slate .nums .after{font-size:40px}
+  .cargo-line{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;padding-inline:4px 24px;margin-inline:-16px;padding-left:20px;
+    scrollbar-width:thin;scrollbar-color:var(--twine-dark) transparent}
+  .cargo{flex-basis:76vw;scroll-snap-align:center}
+  .enamel{padding:14px 24px}
+}
+@media print{.cargo{animation:none;transform:none}.cargo .c-back{display:grid}}

@@ -228,6 +228,15 @@ async def report_file(request: Request) -> Response:
     return FileResponse(target)
 
 
+@mcp.custom_route("/static/{path:path}", methods=["GET"])
+async def static_file(request: Request) -> Response:
+    base = (Path(__file__).resolve().parent / "static").resolve()
+    target = (base / request.path_params["path"]).resolve()
+    if base not in target.parents or not target.is_file():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(target, headers={"Cache-Control": "public, max-age=300"})
+
+
 @mcp.custom_route("/healthz", methods=["GET"])
 async def health(_: Request) -> Response:
     return JSONResponse({"ok": True})

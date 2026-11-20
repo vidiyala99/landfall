@@ -220,6 +220,24 @@ class ReportTest(unittest.TestCase):
             self.assertNotIn("—", page)
         self.assertIn('<body class="v-a">', report.render(run, variant="zzz"))  # unknown falls back to a
 
+    def test_harbor_variants_render(self):
+        run = self.copy_fixture()
+        ha = report.render(run, variant="harbor-a")
+        hb = report.render(run, variant="harbor-b")
+        self.assertIn('<body class="v-harbor v-ha">', ha)
+        self.assertIn('<h1 class="qb"><span class="qb-face">Your website tells AI assistants to stay out</span></h1>', ha)
+        self.assertIn('<ol class="cargo-line"', ha)
+        self.assertIn('<li class="cargo sev-high"><details><summary>', ha)
+        self.assertIn('class="enamel" href="#todo"', ha)
+        self.assertIn('<body class="v-harbor v-hb">', hb)
+        self.assertIn('type="radio" name="berth" id="berth-1" checked', hb)
+        self.assertIn('<label class="post" for="berth-3"', hb)
+        for page in (ha, hb):
+            self.assertIn("family=Ultra", page)
+            self.assertIn('class="slate board"', page)
+            self.assertNotIn("—", page)
+            self.assertNotIn("<script", page.split("</head>")[0])
+
     def test_products_fix_named_with_count_and_hours_tidied(self):
         run = self.copy_fixture()
         (run / "fixes" / "products.jsonld.html").write_text("<script></script>", encoding="utf-8")

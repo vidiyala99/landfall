@@ -1,0 +1,57 @@
+/* harbor-b, the arrival log: a short quayside header, then three berths paged one at a time. */
+.quay{padding:clamp(16px,3vh,40px) clamp(16px,3.4vw,72px) clamp(20px,4vh,48px);
+  background:linear-gradient(180deg,rgb(10 22 32 / .55),rgb(10 22 32 / .84) 70%,var(--night)),url(/static/harbor/harbor-ground.webp) center 30%/cover no-repeat,var(--sea)}
+.quay-in{max-width:1500px;margin:0 auto;display:grid;gap:clamp(12px,2vh,24px);grid-template-columns:minmax(0,1fr) minmax(0,.95fr);align-items:center}
+.quay-in .biz,.quay-in .qb{grid-column:1 / -1}
+.quay-in .qb-face{font-size:clamp(24px,3vw,58px)}
+
+.log{max-width:1500px;margin:0 auto;padding:0 clamp(16px,3.4vw,72px)}
+.step-in{position:absolute;opacity:0;pointer-events:none}
+.posts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,2vw,40px);padding:22px clamp(8px,2vw,32px) 26px;margin-top:-6px;border-radius:12px;
+  background:linear-gradient(180deg,rgb(0 0 0 / 0) 58%,rgb(0 0 0 / .35) 58%,rgb(0 0 0 / .1)),
+    linear-gradient(180deg,transparent 62%,#3b2416 62% 64%,transparent 64%),url(/static/harbor/wood.webp) center/420px auto,#4a2a18;
+  box-shadow:0 18px 32px -16px rgb(0 0 0 / .7)}
+.post{cursor:pointer;display:grid;justify-items:center;gap:6px;text-align:center;transition:transform 200ms var(--ease-out),opacity 200ms ease}
+.post-t{display:grid;place-items:center;width:100%;max-width:420px;aspect-ratio:546 / 152;padding:0 14%;
+  background:var(--plate) center/100% 100% no-repeat;font:400 clamp(16px,1.5vw,30px)/1.05 var(--sign);color:var(--gilt);
+  text-shadow:0 -1px 0 rgb(50 24 6 / .95),0 2px 5px rgb(0 0 0 / .5);filter:drop-shadow(0 8px 10px rgb(0 0 0 / .45))}
+.post-c{font:700 1em/1.2 var(--body);color:var(--chalk);padding:4px 12px;border-radius:999px}
+.post{opacity:.72}
+@media (hover:hover) and (pointer:fine){.post:hover{opacity:.92}}
+.post:active{transform:scale(.97)}
+.step-in:nth-of-type(1):checked ~ .posts .post:nth-child(1),
+.step-in:nth-of-type(2):checked ~ .posts .post:nth-child(2),
+.step-in:nth-of-type(3):checked ~ .posts .post:nth-child(3){opacity:1;transform:translateY(-4px)}
+.step-in:nth-of-type(1):checked ~ .posts .post:nth-child(1) .post-c,
+.step-in:nth-of-type(2):checked ~ .posts .post:nth-child(2) .post-c,
+.step-in:nth-of-type(3):checked ~ .posts .post:nth-child(3) .post-c{background:var(--enamel);color:var(--enamel-ink)}
+.step-in:nth-of-type(1):focus-visible ~ .posts .post:nth-child(1),
+.step-in:nth-of-type(2):focus-visible ~ .posts .post:nth-child(2),
+.step-in:nth-of-type(3):focus-visible ~ .posts .post:nth-child(3){outline:3px solid var(--enamel);outline-offset:6px;border-radius:8px}
+
+.panel{display:none;padding-bottom:12px}
+.step-in:nth-of-type(1):checked ~ .panels .p1,
+.step-in:nth-of-type(2):checked ~ .panels .p2,
+.step-in:nth-of-type(3):checked ~ .panels .p3{display:block}
+@media (prefers-reduced-motion:no-preference){.panel{animation:berth 320ms var(--ease-out)}}
+@keyframes berth{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.panel .wrap{max-width:1100px;padding:0}
+.panel section.block{padding-block:32px 4px}
+.slate-line{margin-top:28px;display:inline-block;padding:14px 22px;border-radius:12px;font:700 1.1em/1.35 var(--body);color:var(--chalk);
+  background:url(/static/harbor/slate.webp) center/100% 100% no-repeat,#2c3338}
+.enamel-big{margin-top:32px}
+.pager{margin-top:28px;display:flex;justify-content:flex-end}
+.next{cursor:pointer;display:inline-flex;align-items:center;gap:12px;font:800 1.3em/1 var(--display);color:var(--enamel-ink);background:var(--enamel);
+  padding:14px 22px;border-radius:10px;border:2px solid var(--brass);transition:transform 160ms var(--ease-out)}
+.next .arrow{color:var(--enamel-ink)}
+.next:active{transform:scale(.97)}
+.end{margin-top:28px;color:var(--chalk-2)}
+@media print{.panel{display:block}.posts,.pager{display:none}}
+@media (max-width:900px){
+  .quay-in{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .posts{grid-template-columns:1fr;gap:10px;background:#4a2a18 url(/static/harbor/wood.webp) center/360px auto}
+  .post{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center;justify-items:start;text-align:left}
+  .post-t{font-size:18px}
+}

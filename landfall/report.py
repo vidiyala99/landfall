@@ -17,6 +17,10 @@ TEMPLATES = Path(__file__).resolve().parent / "templates"
 FONTS = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700"
          "&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap")
 
+FONTS_HARBOR = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700"
+                "&family=Big+Shoulders+Display:wght@700;800&family=Ultra&display=swap")
+STATIC = "/static/harbor"
+
 SEV_ORDER = {"high": 0, "med": 1, "low": 2}
 GROUP_WORD = {"high": "Big problems", "med": "Worth fixing", "low": "Small things"}
 SEV_WORD = {"high": "Big problem", "med": "Worth fixing", "low": "Small thing"}
@@ -419,6 +423,16 @@ def _task_receipts(t, when):
 
 # ---------- what's broken ----------
 
+def _status_tag(c, after_status) -> str:
+    if c.get("fixable") is False or not c.get("fix_id"):
+        # Not something a file can fix (e.g. a bot wall at the host): it needs the owner or the host.
+        return ('<span class="tag host">Needs a setting change by you or your website host</span>'
+                if after_status.get(c.get("id")) == "pass" or c.get("fixable") is False else "")
+    if after_status.get(c.get("id")) == "pass":
+        return '<span class="tag fixed">Fixed in our test copy</span>'
+    return '<span class="tag">Fix included</span>' if c.get("fix_id") else ""
+
+
 def section_broken(scan, after_scan, grouped=False, title="What's broken") -> str:
     head = f'<h2>{esc(title)}</h2><p class="note">Biggest first. Open any row for the proof we saved.</p>'
     if not scan:
@@ -438,14 +452,7 @@ def section_broken(scan, after_scan, grouped=False, title="What's broken") -> st
             link = f'<a href="{href}">See the proof</a>' if href else ""
             if not link and safe_url(r.get("url")):
                 link = _ext_link(r.get("url"), "See the page")
-            if c.get("fixable") is False or not c.get("fix_id"):
-                # Not something a file can fix (e.g. a bot wall at the host): it needs the owner or the host.
-                status = ('<span class="tag host">Needs a setting change by you or your website host</span>'
-                          if after_status.get(c.get("id")) == "pass" or c.get("fixable") is False else "")
-            elif after_status.get(c.get("id")) == "pass":
-                status = '<span class="tag fixed">Fixed in our test copy</span>'
-            else:
-                status = '<span class="tag">Fix included</span>' if c.get("fix_id") else ""
+            status = _status_tag(c, after_status)
             title = c.get("title") or c.get("id") or "Problem"
             name = PROBLEM.get(c.get("id"), title)
             body_parts = [f'<p>{esc(c.get("detail") or "")}</p>' if c.get("detail") else ""]
@@ -660,7 +667,7 @@ def section_footer(scan, do, find) -> str:
 <p>Made with Landfall.{stamp}</p></footer>"""
 
 
-VARIANTS = ("a", "b")
+VARIANTS = ("a", "b", "harbor-a", "harbor-b")
 
 
 def _fix_tally(scan, after_scan):
@@ -774,8 +781,134 @@ def _layout_b(ctx) -> str:
 </body>"""
 
 
+# ---------- harbor world (variants harbor-a, harbor-b) ----------
+
+def _cargo_tags(scan, after_scan) -> str:
+    """Each problem is a manila cargo tag on twine: the front says the problem and how bad it is,
+    opening it (a <details>, so no script) turns it over to the receipt and the fix status."""
+    if not scan:
+        return _empty("The website check has not run yet.")
+    _, fails = _failing(scan)
+    if not fails:
+        return _empty("Nothing broken. Assistants can read everything we checked.")
+    after_status = {c.get("id"): c.get("status") for c in _list(_dict(after_scan).get("checks")) if isinstance(c, dict)}
+    tags = []
+    for c in fails:
+        sev = c.get("severity") if c.get("severity") in SEV_WORD else "low"
+        r = _dict(c.get("receipt"))
+        href = receipt_href(r.get("path"))
+        link = f'<a href="{href}">See the proof</a>' if href else ""
+        if not link and safe_url(r.get("url")):
+            link = _ext_link(r.get("url"), "See the page")
+        name = PROBLEM.get(c.get("id"), c.get("title") or c.get("id") or "Problem")
+        back = [f'<p>{esc(_first_sentence(c.get("detail"), 150))}</p>' if c.get("detail") else ""]
+        if r.get("excerpt"):
+            back.append(f'<blockquote class="excerpt">{esc(r.get("excerpt"))}</blockquote>')
+        if link:
+            back.append(f'<p class="receipts">{link}</p>')
+        tags.append(f'<li class="cargo sev-{sev}"><details><summary>'
+                    f'<span class="eyelet" aria-hidden="true"></span>'
+                    f'<span class="stamp">{SEV_WORD[sev]}</span>'
+                    f'<span class="c-name">{esc(name)}</span>{_status_tag(c, after_status)}'
+                    f'<span class="c-open">Turn over for proof</span></summary>'
+                    f'<div class="c-back">{"".join(back) or "<p>No proof saved.</p>"}</div></details></li>')
+    return f'<ol class="cargo-line" aria-label="Problems, biggest first">{"".join(tags)}</ol>'
+
+
+def _todo_words(ctx) -> str:
+    questions, nfiles = ctx["todo"]
+    return " and ".join(x for x in (_plural(nfiles, "file") if nfiles else "",
+                                     _plural(questions, "question") if questions else "") if x) or "nothing yet"
+
+
+def _harbor_quarterboard(ctx) -> str:
+    return f'<h1 class="qb"><span class="qb-face">{esc(ctx["title"])}</span></h1>'
+
+
+def _layout_harbor_a(ctx) -> str:
+    """The dock board: one projector screen with the quarterboard headline, the slate tally, the enamel to-do
+    plate and a line of cargo tags; tasks, the customer question and the fix files sit on the deck below."""
+    return f"""<body class="v-harbor v-ha"><a class="skip" href="#deck">Skip to the details</a>
+<header class="dock" id="top">
+  <div class="dock-in">
+    <p class="biz">{ctx["biz"]}</p>
+    {_harbor_quarterboard(ctx)}
+    <p class="sub">{esc(ctx["sub"])}</p>
+    <div class="dock-row">
+      <div class="slate board" role="group" aria-label="Before and after our fixes">{ctx["board"]}</div>
+      <a class="enamel" href="#todo"><span class="e-k">Your to-do</span><span class="e-v">{esc(_todo_words(ctx))}</span></a>
+    </div>
+    <section class="cargo-wrap" id="broken" aria-labelledby="cargo-h">
+      <h2 id="cargo-h" class="sr">Problems</h2>
+      {_cargo_tags(ctx["scan"], ctx["after_scan"])}
+    </section>
+  </div>
+</header>
+<main class="deck" id="deck">
+{ctx["do"]}
+{ctx["find"]}
+<div class="todo" id="todo">{ctx["fixes"]}</div>
+</main>
+{ctx["footer"]}
+</body>"""
+
+
+def _layout_harbor_b(ctx) -> str:
+    """The arrival log: a short quayside header, then three paged berths (Arrived, Repaired, Ready to sail),
+    each signposted by a carved quarterboard. Berths are radio inputs, so it works with no script."""
+    problems, fixed, host = ctx["tally"]
+    berths = [
+        ("arrived", "Arrived", _plural(problems, "problem") if ctx["scan"] else "not checked yet", "qb-quay-1"),
+        ("repaired", "Repaired", f"{fixed} of {problems} fixed" if problems else "customer tasks", "qb-yard-2"),
+        ("ready", "Ready to sail", _todo_words(ctx), "qb-sail-1"),
+    ]
+    inputs = "".join(f'<input class="step-in" type="radio" name="berth" id="berth-{i}"{" checked" if i == 1 else ""} '
+                     f'aria-label="{esc(t)}: {esc(c)}">' for i, (_, t, c, _p) in enumerate(berths, 1))
+    posts = "".join(f'<label class="post" for="berth-{i}" style="--plate:url({STATIC}/{p}.webp)">'
+                    f'<span class="post-t">{esc(t)}</span><span class="post-c">{esc(c)}</span></label>'
+                    for i, (_, t, c, p) in enumerate(berths, 1))
+
+    def nxt(i):
+        if i >= 3:
+            return '<p class="end">That is the whole log. Questions? Reply to the email this came with.</p>'
+        return (f'<div class="pager"><label class="next" for="berth-{i + 1}">Next: {esc(berths[i][1])}'
+                f'<span class="arrow" aria-hidden="true"></span></label></div>')
+
+    fixed_line = ""
+    if problems:
+        bits = [f"{fixed} of {problems} problems are fixed in our private test copy of your site."]
+        if host:
+            bits.append(f"{_plural(host, 'problem')} {'needs' if host == 1 else 'need'} a setting change by you or your host.")
+        fixed_line = f'<p class="tally slate-line">{esc(" ".join(bits))}</p>'
+    arrived = ('<section class="block" id="broken"><h2>What came ashore</h2>'
+               '<p class="note">Biggest first. Turn a tag over for the proof.</p>'
+               f'{_cargo_tags(ctx["scan"], ctx["after_scan"])}</section>' + ctx["find"])
+    ready = ('<a class="enamel enamel-big" href="#fixes"><span class="e-k">Your to-do</span>'
+             f'<span class="e-v">{esc(_todo_words(ctx))}</span></a>' + ctx["fixes"])
+    panels = [arrived, fixed_line + ctx["do"], ready]
+    body = "".join(f'<div class="panel p{i}" id="{berths[i - 1][0]}">{part}{nxt(i)}</div>'
+                   for i, part in enumerate(panels, 1))
+    return f"""<body class="v-harbor v-hb"><a class="skip" href="#log">Skip to the log</a>
+<header class="quay" id="top">
+  <div class="quay-in">
+    <p class="biz">{ctx["biz"]}</p>
+    {_harbor_quarterboard(ctx)}
+    <p class="sub">{esc(ctx["sub"])}</p>
+    <div class="slate board" role="group" aria-label="Before and after our fixes">{ctx["board"]}</div>
+  </div>
+</header>
+<main class="log" id="log">
+{inputs}
+<nav class="posts" aria-label="Report berths">{posts}</nav>
+<div class="panels">{body}</div>
+</main>
+{ctx["footer"]}
+</body>"""
+
+
 def render(run_dir, variant="a") -> str:
-    """variant 'a' is the three-step story, 'b' the checklist dashboard; anything else falls back to 'a'."""
+    """variant 'a' is the three-step story, 'b' the checklist dashboard, 'harbor-a' the dock board and
+    'harbor-b' the arrival log (harbor world); anything else falls back to 'a'."""
     run_dir = Path(run_dir)
     variant = variant if variant in VARIANTS else "a"
     scan = _load_json(run_dir / "scan.json")
@@ -790,12 +923,15 @@ def render(run_dir, variant="a") -> str:
     url = _dict(scan).get("url") or _dict(do).get("url") or result.get("url") or ""
     name = facts.get("name") or result.get("name") or _host(url) or _dict(scan).get("slug") or run_dir.name
     css = (TEMPLATES / "report.css").read_text(encoding="utf-8")
+    harbor = variant.startswith("harbor")
+    if harbor:
+        css += "\n" + (TEMPLATES / "report-harbor.css").read_text(encoding="utf-8")
     css += "\n" + (TEMPLATES / f"report-{variant}.css").read_text(encoding="utf-8")
 
     biz, title, sub, board = section_hero(name, url, scan, after_scan, do, after_do, find, after_find)
     sub, task_line = _split_sub(sub, do)
     ctx = {
-        "scan": scan, "biz": biz, "title": title, "sub": sub, "board": board,
+        "scan": scan, "after_scan": after_scan, "biz": biz, "title": title, "sub": sub, "board": board,
         "tally": _fix_tally(scan, after_scan), "todo": _todo_count(run_dir),
         "broken": section_broken(scan, after_scan, grouped=(variant == "b"),
                                  title="Problems" if variant == "b" else "What's broken"),
@@ -805,7 +941,7 @@ def render(run_dir, variant="a") -> str:
         "fixes": section_fixes(run_dir, title="Your to-do"),
         "footer": section_footer(scan, do, find),
     }
-    layout = _layout_b(ctx) if variant == "b" else _layout_a(ctx)
+    layout = {"b": _layout_b, "harbor-a": _layout_harbor_a, "harbor-b": _layout_harbor_b}.get(variant, _layout_a)(ctx)
 
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -813,7 +949,7 @@ def render(run_dir, variant="a") -> str:
 <title>{esc(name)}: AI assistant check</title>
 <meta name="description" content="Can AI assistants read, use and recommend {esc(name)}? Before and after report.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="{FONTS}">
+<link rel="stylesheet" href="{FONTS_HARBOR if harbor else FONTS}">
 <style>{css}</style></head>
 {layout}</html>"""
     try:
