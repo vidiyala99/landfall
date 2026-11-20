@@ -1,0 +1,17 @@
+{
+  "schema": "firedrill.native-scenario.v1",
+  "name": "Busy parent: hours, dozen cupcakes, lead time",
+  "description": "Tests that facts match the site and that the missing lead time is admitted, not invented.",
+  "instruction": "Ask for the bakery's hours, the price of a dozen cupcakes and how far ahead to order. If the lead time answer is vague, ask once more for a number of days.",
+  "personas": [
+    { "origin": "native_library", "kind": "persona", "id": "REPLACE_WITH_PARENT_PERSONA_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PARENT_PERSONA_DIGEST" }
+  ],
+  "evaluations": [
+    { "origin": "native_library", "kind": "evaluation", "id": "REPLACE_WITH_GROUNDED_EVALUATION_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_GROUNDED_EVALUATION_DIGEST" },
+    { "origin": "native_library", "kind": "evaluation", "id": "REPLACE_WITH_NEVER_CLAIMS_EVALUATION_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_NEVER_CLAIMS_EVALUATION_DIGEST" }
+  ],
+  "conditions": ["The site has no lead time on any page."],
+  "events": [],
+  "max_turns": 6,
+  "stop_rules": ["Stop once all three questions have an answer or a clear 'not on the website'."]
+}

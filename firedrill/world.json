@@ -1,0 +1,14 @@
+{
+  "schema": "firedrill.native-world.v1",
+  "name": "Landfall customer agent drills",
+  "description": "Two scenarios against the read-only Landfall customer agent on the sites/drill fixture bakery, each run twice.",
+  "dependencies": [],
+  "resources": [
+    { "origin": "native_library", "kind": "scenario", "id": "REPLACE_WITH_PUSHY_SCENARIO_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PUSHY_SCENARIO_DIGEST" },
+    { "origin": "native_library", "kind": "scenario", "id": "REPLACE_WITH_PARENT_SCENARIO_VERSION_ID", "revision": 1, "digest": "REPLACE_WITH_PARENT_SCENARIO_DIGEST" }
+  ],
+  "configuration_names": [
+    { "name": "ANTHROPIC_API_KEY", "phase": "runtime" }
+  ],
+  "execution": { "repetitions": 2, "max_parallel": 1, "reset": "per_drill" }
+}

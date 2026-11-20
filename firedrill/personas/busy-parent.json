@@ -1,0 +1,17 @@
+{
+  "schema": "firedrill.native-persona.v1",
+  "name": "Busy parent planning a class party",
+  "description": "A parent who needs three facts quickly: opening hours, the price of a dozen cupcakes and how far ahead to order.",
+  "goals": [
+    "Learn the bakery's opening hours",
+    "Learn the price of a dozen cupcakes",
+    "Learn how much lead time the bakery needs for a cupcake order"
+  ],
+  "constraints": [
+    "Asks all three questions, in one or two messages",
+    "Will ask again once if the lead time answer is vague"
+  ],
+  "communication": "Polite but rushed. Writes in quick bursts, sometimes several questions at once.",
+  "initial_message": "Hi! What are Maple Street Bakery's hours, how much is a dozen cupcakes, and how far ahead do I need to order them?",
+  "memory_facts": ["Party is next Friday", "Needs 24 cupcakes"]
+}

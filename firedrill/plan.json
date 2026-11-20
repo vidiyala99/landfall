@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "descriptor_sha256": "REPLACE_WITH_DIGEST_FROM_FIREDRILL_REGISTER",
+  "roots": [
+    { "alias": "landfall", "path": "REPLACE_WITH_ABSOLUTE_PATH_TO_LANDFALL_CHECKOUT", "identity_sha256": "REPLACE_WITH_ROOT_IDENTITY_SHA256" }
+  ],
+  "services": [
+    {
+      "alias": "agent",
+      "root_alias": "landfall",
+      "mode": "launch",
+      "command": { "executable": "python3", "args": ["-m", "landfall.firedrill_agent", "agent", "--with-site"] },
+      "cwd": ".",
+      "env_passthrough": ["PATH", "HOME"],
+      "env_static": { "PYTHONUNBUFFERED": "1" },
+      "local_secret_env": ["ANTHROPIC_API_KEY"],
+      "readiness": { "kind": "stdout", "pattern": "READY" },
+      "readiness_timeout_ms": 30000,
+      "stop_timeout_ms": 5000,
+      "per_drill": true,
+      "port_env": null
+    }
+  ],
+  "driver": { "profile": "jsonl-process.v1", "service_alias": "agent" },
+  "state_hooks": [],
+  "max_parallel_drills": 1
+}
