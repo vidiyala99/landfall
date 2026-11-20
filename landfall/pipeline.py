@@ -91,6 +91,13 @@ class Job:
                 self.stage("do", "done")
             except Exception as e:  # noqa: BLE001
                 self.stage("do", "failed", str(e)[:300])
+        if self.run_tasks and self.tasks and not (self.dir / "do_fetch.json").exists():
+            self.stage("do_fetch", "running")
+            try:
+                agent_run.run_do(self.url, self.tasks, self.dir, engine="fetch")
+                self.stage("do_fetch", "done")
+            except Exception as e:  # noqa: BLE001
+                self.stage("do_fetch", "failed", str(e)[:300])
         self._cli("mirror", ["landfall.mirror", self.url, "--out", str(self.dir / "mirror")])
         self._cli("fix", ["landfall.fix", str(self.dir)])
         fixed = self.dir / "mirror-fixed"
@@ -107,6 +114,12 @@ class Job:
                         self.stage("redo", "done")
                     except Exception as e:  # noqa: BLE001
                         self.stage("redo", "failed", str(e)[:300])
+                    self.stage("redo_fetch", "running")
+                    try:
+                        agent_run.run_do(f"http://127.0.0.1:{port}/", self.tasks, after, engine="fetch")
+                        self.stage("redo_fetch", "done")
+                    except Exception as e:  # noqa: BLE001
+                        self.stage("redo_fetch", "failed", str(e)[:300])
             finally:
                 stop()
         result = summarize(self.dir)
@@ -156,6 +169,7 @@ def _load(p: Path) -> dict | None:
 def summarize(run_dir: Path) -> dict:
     before, after = _load(run_dir / "scan.json"), _load(run_dir / "after" / "scan.json")
     do_b, do_a = _load(run_dir / "do.json"), _load(run_dir / "after" / "do.json")
+    fe_b, fe_a = _load(run_dir / "do_fetch.json"), _load(run_dir / "after" / "do_fetch.json")
     find = _load(run_dir / "find.json")
     fails = [c for c in (before or {}).get("checks", []) if c.get("status") == "fail"]
     return {
@@ -164,6 +178,7 @@ def summarize(run_dir: Path) -> dict:
         "read": {"before": (before or {}).get("score", {}).get("read"),
                  "after": (after or {}).get("score", {}).get("read")},
         "do": {"before": (do_b or {}).get("score"), "after": (do_a or {}).get("score")},
+        "do_fetch": {"before": (fe_b or {}).get("score"), "after": (fe_a or {}).get("score")},
         "visible": (find or {}).get("visible"),
         "visibility_query": (find or {}).get("query"),
         "top_problems": [{"id": c["id"], "title": c["title"], "detail": c["detail"], "severity": c["severity"]}
