@@ -18,6 +18,7 @@ FONTS = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@40
          "&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap")
 
 SEV_ORDER = {"high": 0, "med": 1, "low": 2}
+GROUP_WORD = {"high": "Big problems", "med": "Worth fixing", "low": "Small things"}
 SEV_WORD = {"high": "Big problem", "med": "Worth fixing", "low": "Small thing"}
 OUTCOME_WORD = {"done": "Done", "partial": "Got partway", "failed": "Couldn't do it"}
 
@@ -312,18 +313,17 @@ def section_hero(name, url, scan, after_scan, do, after_do, find, after_find) ->
     show_name = esc(name) if not (site and str(name).lower() == _host(url).lower()) else ""
     biz = show_name + (" " if show_name and site else "") + site
     title, sub = headline(scan, do)
-    return f"""
-<header class="hero wrap" id="top">
-  <p class="biz">{biz}</p>
-  <h1>{esc(title)}</h1>
-  <p class="sub">{esc(sub)}</p>
-  <div class="board" aria-label="Before and after our fixes">
-    {_metric("Read", "Can assistants read your facts?", read)}
-    {_metric("Do", "Can they finish customer tasks?", doh)}
-    {_metric("Found", "Do they suggest you?", found)}
-  </div>
-  <p class="legend">Today, then after our fixes on a private copy of your site.</p>
-</header>"""
+    return biz, title, sub, (_metric("Read", "Can assistants read your facts?", read)
+                             + _metric("Do", "Can they finish customer tasks?", doh)
+                             + _metric("Found", "Do they suggest you?", found))
+
+
+def _split_sub(sub, do):
+    """The hero keeps the problem sentence; the task sentence moves to the tasks section (less text up top)."""
+    tasks = _task_sentence(do)
+    if tasks and sub.endswith(tasks):
+        return sub[:-len(tasks)].strip() or sub, tasks
+    return sub, ""
 
 
 def _host(url):
@@ -353,8 +353,9 @@ def _row(cls, summary_html, body_html) -> str:
 CHIP_WORD = {"done": "Done", "partial": "Partly", "failed": "Failed"}
 
 
-def section_do(do, after_do) -> str:
-    head = '<h2>What the assistant tried</h2><p class="note">Real customer jobs. It only looked: no orders, payments or forms.</p>'
+def section_do(do, after_do, lead="", title="What the assistant tried") -> str:
+    head = (f'<h2>{esc(title)}</h2><p class="note">{esc(lead + " " if lead else "")}'
+            'It only looked: no orders, payments or forms.</p>')
     tasks = [t for t in _list(_dict(do).get("tasks")) if isinstance(t, dict)]
     after_tasks = {str(t.get("task")): t for t in _list(_dict(after_do).get("tasks")) if isinstance(t, dict)}
     if not tasks and not after_tasks:
@@ -418,8 +419,8 @@ def _task_receipts(t, when):
 
 # ---------- what's broken ----------
 
-def section_broken(scan, after_scan) -> str:
-    head = '<h2>What\'s broken</h2><p class="note">Biggest first. Open any row for the proof we saved.</p>'
+def section_broken(scan, after_scan, grouped=False, title="What's broken") -> str:
+    head = f'<h2>{esc(title)}</h2><p class="note">Biggest first. Open any row for the proof we saved.</p>'
     if not scan:
         return f'<section class="block wrap" id="broken">{head}{_empty("The website check has not run yet.")}</section>'
     checks, fails = _failing(scan)
@@ -458,8 +459,17 @@ def section_broken(scan, after_scan) -> str:
                 body_parts.append(f'<p class="receipts">{link}</p>')
             summary = (f'<span class="sev"><span class="pip" aria-hidden="true"></span>{SEV_WORD[sev]}</span>'
                        f'<span class="r-title">{esc(name)}</span>{status}')
-            rows.append(_row(f"finding sev-{sev}", summary, "".join(body_parts)))
-        body = f'<div class="rows">{"".join(rows)}</div>'
+            rows.append((sev, _row(f"finding sev-{sev}", summary, "".join(body_parts))))
+        if grouped:
+            parts = []
+            for sev in ("high", "med", "low"):
+                group = [r for s, r in rows if s == sev]
+                if group:
+                    parts.append(f'<div class="group g-{sev}"><h3 class="g-head">{GROUP_WORD[sev]}'
+                                 f'<span class="g-count">{len(group)}</span></h3><div class="rows">{"".join(group)}</div></div>')
+            body = "".join(parts)
+        else:
+            body = f'<div class="rows">{"".join(r for _, r in rows)}</div>'
     tail = f'<p class="passed">{passed} of {len(checks)} checks passed.</p>' if checks else ""
     return f'<section class="block wrap" id="broken">{head}{body}{tail}</section>'
 
@@ -511,6 +521,7 @@ WHERE_DEFAULT = {
     "robots.txt": "Replace the robots.txt at the root of your website.",
     "agent.json": "Upload to yoursite.com/.well-known/agent.json (optional).",
     "jsonld.html": "Paste inside the <head> of your homepage.",
+    "products.jsonld.html": "Paste inside the <head> of your homepage. Redo it when prices change.",
 }
 
 
@@ -537,9 +548,10 @@ def _fix_items(changes: str | None):
     return items
 
 
-def section_fixes(run_dir: Path) -> str:
-    head = ('<h2>Your fix package</h2><p class="note">Hand this to whoever runs your website. '
-            'Each file goes in one place.</p>')
+def section_fixes(run_dir: Path, title="Your fix package") -> str:
+    head = (f'<h2>{esc(title)}</h2><p class="note">Hand these files to whoever runs your website. '
+            'Each one goes in one place.</p>')
+    n_products = _product_count(run_dir)
     changes = _load_text(run_dir / "fixes" / "CHANGES.md")
     owner = _load_text(run_dir / "fixes" / "needs-owner.md")
     files = _fix_files(run_dir)
@@ -557,7 +569,9 @@ def section_fixes(run_dir: Path) -> str:
         for rel, href in ordered:
             it = parsed.get(rel, {})
             whats = it.get("what", [])
-            if not whats:
+            if rel.rsplit("/", 1)[-1] == "products.jsonld.html":
+                what = _file_purpose(rel, n_products)
+            elif not whats:
                 what = _file_purpose(rel)
             elif len(whats) == 1:
                 what = whats[0]
@@ -575,7 +589,7 @@ def section_fixes(run_dir: Path) -> str:
                 + (f'<p class="receipts"><span>Guides for your web person:</span> {"".join(notes)}</p>' if notes else "")
                 + full)
     right = ('<aside class="owner"><h3>Questions only you can answer</h3>'
-             + (f'<div class="md">{markdown(_drop_title(owner))}</div>' if owner
+             + (f'<div class="md">{markdown(tidy_owner(_drop_title(owner)))}</div>' if owner
                 else "<p>" + ("None right now." if changes else "These appear after the fix step runs.") + "</p>")
              + "</aside>")
     return f'<section class="block wrap" id="fixes">{head}<div class="cols">{left and f"<div>{left}</div>"}{right}</div></section>'
@@ -586,8 +600,35 @@ def _drop_title(md: str) -> str:
     return re.sub(r"^\s*#[^\n]*\n", "", md, count=1)
 
 
-def _file_purpose(rel: str) -> str:
+def _product_count(run_dir: Path):
+    data = _load_json(run_dir / "products.json")
+    if not data:
+        return None
+    n = data.get("count")
+    if isinstance(n, int) and not isinstance(n, bool) and n >= 0:
+        return n
+    items = data.get("products")
+    return len(items) if isinstance(items, list) else None
+
+
+def tidy_owner(md: str) -> str:
+    """Owner questions quote scraped text: drop a span repeated back to back, and space 'Fri9:00' as 'Fri 9:00'."""
+    out = []
+    for line in md.split("\n"):
+        prev = None
+        while prev != line:
+            prev = line
+            line = re.sub(r"(\S.{5,}?)(?:\s*\1)+", r"\1", line)
+        line = re.sub(r"(?<=[A-Za-z])(?=\d{1,2}:\d{2})", " ", line)
+        out.append(line)
+    return "\n".join(out)
+
+
+def _file_purpose(rel: str, n_products=None) -> str:
     name = rel.rsplit("/", 1)[-1]
+    if name == "products.jsonld.html":
+        return (f"Your {n_products} products with their prices, readable by assistants" if n_products
+                else "Your products with their prices, readable by assistants")
     return {"llms.txt": "A short guide that tells assistants what you do",
             "robots.txt": "Lets AI assistants read your site",
             "agent.json": "A card listing what an assistant can do on your site",
@@ -619,8 +660,124 @@ def section_footer(scan, do, find) -> str:
 <p>Made with Landfall.{stamp}</p></footer>"""
 
 
-def render(run_dir) -> str:
+VARIANTS = ("a", "b")
+
+
+def _fix_tally(scan, after_scan):
+    """(problems, fixed in the test copy, needs the owner or host) for the step labels and summary."""
+    _, fails = _failing(scan)
+    after_status = {c.get("id"): c.get("status") for c in _list(_dict(after_scan).get("checks")) if isinstance(c, dict)}
+    host = sum(1 for c in fails if c.get("fixable") is False or not c.get("fix_id"))
+    fixed = sum(1 for c in fails if c.get("fix_id") and c.get("fixable") is not False
+                and after_status.get(c.get("id")) == "pass")
+    return len(fails), fixed, host
+
+
+def _plural(n, word):
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def _todo_count(run_dir: Path):
+    owner = _load_text(run_dir / "fixes" / "needs-owner.md") or ""
+    questions = len(re.findall(r"(?m)^\s*(?:\d+[.)]|[-*+])\s+", owner))
+    files = [r for r, _ in _fix_files(run_dir) if not r.endswith(".md")]
+    rels = set(files)
+    files = [r for r in files if not (r.endswith(".json") and r[:-5] + ".html" in rels)]
+    return questions, len(files)
+
+
+def _layout_a(ctx) -> str:
+    """Three-step story: the headline and three numbers on top, then one step on screen at a time.
+    Tabs are radio inputs, so it works with no script; print shows every step."""
+    problems, fixed, host = ctx["tally"]
+    questions, nfiles = ctx["todo"]
+    todo = " and ".join(x for x in (_plural(nfiles, "file") if nfiles else "",
+                                     _plural(questions, "question") if questions else "") if x)
+    steps = [
+        ("wrong", "What's wrong", _plural(problems, "problem") if ctx["scan"] else "not checked yet"),
+        ("fixed", "What we fixed", f"{fixed} of {problems} fixed" if problems else "customer tasks"),
+        ("next", "What you do next", todo or "nothing yet"),
+    ]
+    inputs = "".join(f'<input class="step-in" type="radio" name="step" id="step-{i}"{" checked" if i == 1 else ""} '
+                     f'aria-label="Step {i}: {esc(t)}">' for i, (_, t, _c) in enumerate(steps, 1))
+    tabs = "".join(f'<label class="tab" for="step-{i}"><span class="tab-n">{i}</span>'
+                   f'<span class="tab-t">{esc(t)}</span><span class="tab-c">{esc(c)}</span></label>'
+                   for i, (_, t, c) in enumerate(steps, 1))
+
+    def nxt(i):
+        if i >= 3:
+            return '<p class="end">That is the whole report. Questions? Reply to the email this came with.</p>'
+        return (f'<div class="pager"><label class="next" for="step-{i + 1}">Next: {esc(steps[i][1])}'
+                f'<span class="arrow" aria-hidden="true"></span></label></div>')
+
+    fixed_line = ""
+    if problems:
+        bits = [f"{fixed} of {problems} problems are fixed in our private test copy of your site."]
+        if host:
+            bits.append(f"{_plural(host, 'problem')} {'needs' if host == 1 else 'need'} a setting change by you or your host.")
+        fixed_line = f'<p class="tally">{esc(" ".join(bits))}</p>'
+    panels = [ctx["broken"] + ctx["find"], fixed_line + ctx["do"], ctx["fixes"]]
+    body = "".join(f'<div class="panel p{i}" id="{steps[i - 1][0]}">{part}{nxt(i)}</div>'
+                   for i, part in enumerate(panels, 1))
+    return f"""<body class="v-a"><a class="skip" href="#story">Skip to the steps</a>
+<header class="hero wrap" id="top">
+  <p class="biz">{ctx["biz"]}</p>
+  <h1>{esc(ctx["title"])}</h1>
+  <p class="sub">{esc(ctx["sub"])}</p>
+  <div class="board" aria-label="Before and after our fixes">{ctx["board"]}</div>
+  <p class="legend">Today, then after our fixes on a private copy of your site.</p>
+</header>
+<main class="story wrap" id="story">
+{inputs}
+<nav class="tabs" aria-label="Report steps">{tabs}</nav>
+<div class="panels">{body}</div>
+</main>
+{ctx["footer"]}
+</body>"""
+
+
+def _layout_b(ctx) -> str:
+    """Checklist dashboard: a sticky summary on the left, a compact problem, fix and proof checklist on the
+    right grouped by severity, and a final to-do card."""
+    problems, fixed, host = ctx["tally"]
+    questions, nfiles = ctx["todo"]
+    verdict = []
+    if problems:
+        verdict.append(f'<li><strong>{problems}</strong> problems found</li>')
+        verdict.append(f'<li><strong>{fixed}</strong> fixed in our test copy</li>')
+        if host:
+            verdict.append(f'<li><strong>{host}</strong> need{"s" if host == 1 else ""} you or your host</li>')
+    if nfiles or questions:
+        verdict.append(f'<li><strong>{nfiles + questions}</strong> things on your to-do</li>')
+    jump = ('<nav class="jump" aria-label="On this page"><a href="#broken">Problems</a><a href="#tasks">Tasks</a>'
+            '<a href="#found">Found</a><a href="#todo">Your to-do</a></nav>')
+    verdict_html = f'<ul class="verdict-list">{"".join(verdict)}</ul>' if verdict else ""
+    return f"""<body class="v-b"><a class="skip" href="#broken">Skip to the checklist</a>
+<div class="dash wrap">
+<aside class="summary hero" id="top">
+  <p class="biz">{ctx["biz"]}</p>
+  <h1>{esc(ctx["title"])}</h1>
+  <p class="sub">{esc(ctx["sub"])}</p>
+  <div class="board" aria-label="Before and after our fixes">{ctx["board"]}</div>
+  <p class="legend">Today, then after our fixes on a private copy of your site.</p>
+  {verdict_html}
+  {jump}
+</aside>
+<main class="list">
+{ctx["broken"]}
+{ctx["do"]}
+{ctx["find"]}
+<div class="todo" id="todo">{ctx["fixes"]}</div>
+</main>
+</div>
+{ctx["footer"]}
+</body>"""
+
+
+def render(run_dir, variant="a") -> str:
+    """variant 'a' is the three-step story, 'b' the checklist dashboard; anything else falls back to 'a'."""
     run_dir = Path(run_dir)
+    variant = variant if variant in VARIANTS else "a"
     scan = _load_json(run_dir / "scan.json")
     after_scan = _load_json(run_dir / "after" / "scan.json")
     do = _load_json(run_dir / "do.json")
@@ -633,6 +790,22 @@ def render(run_dir) -> str:
     url = _dict(scan).get("url") or _dict(do).get("url") or result.get("url") or ""
     name = facts.get("name") or result.get("name") or _host(url) or _dict(scan).get("slug") or run_dir.name
     css = (TEMPLATES / "report.css").read_text(encoding="utf-8")
+    css += "\n" + (TEMPLATES / f"report-{variant}.css").read_text(encoding="utf-8")
+
+    biz, title, sub, board = section_hero(name, url, scan, after_scan, do, after_do, find, after_find)
+    sub, task_line = _split_sub(sub, do)
+    ctx = {
+        "scan": scan, "biz": biz, "title": title, "sub": sub, "board": board,
+        "tally": _fix_tally(scan, after_scan), "todo": _todo_count(run_dir),
+        "broken": section_broken(scan, after_scan, grouped=(variant == "b"),
+                                 title="Problems" if variant == "b" else "What's broken"),
+        "do": section_do(do, after_do, lead=task_line,
+                         title="Customer tasks, before and after" if variant == "a" else "What the assistant tried"),
+        "find": section_find(find, after_find),
+        "fixes": section_fixes(run_dir, title="Your to-do"),
+        "footer": section_footer(scan, do, find),
+    }
+    layout = _layout_b(ctx) if variant == "b" else _layout_a(ctx)
 
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -642,16 +815,7 @@ def render(run_dir) -> str:
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{FONTS}">
 <style>{css}</style></head>
-<body><a class="skip" href="#tasks">Skip to details</a>
-<main>
-{section_hero(name, url, scan, after_scan, do, after_do, find, after_find)}
-{section_do(do, after_do)}
-{section_broken(scan, after_scan)}
-{section_find(find, after_find)}
-{section_fixes(run_dir)}
-</main>
-{section_footer(scan, do, find)}
-</body></html>"""
+{layout}</html>"""
     try:
         (run_dir / "report.html").write_text(page, encoding="utf-8")
     except OSError:
@@ -660,5 +824,5 @@ def render(run_dir) -> str:
 
 
 if __name__ == "__main__":
-    out = render(Path(sys.argv[1]))
+    out = render(Path(sys.argv[1]), *sys.argv[2:3])
     print(f"wrote {Path(sys.argv[1]) / 'report.html'} ({len(out)} bytes)")

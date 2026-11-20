@@ -1,0 +1,71 @@
+/* Direction A: three-step story. One step on screen at a time, CSS-only tabs (radio inputs). */
+.v-a .hero{padding-block:28px 0}
+.v-a .hero h1{font-size:clamp(32px,4.6vw,54px);max-width:22ch;margin-bottom:10px}
+.v-a .sub{max-width:70ch}
+.v-a .board{margin-top:22px}
+.v-a .metric{padding:16px 22px 18px}
+
+.story{margin-top:36px}
+.step-in{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+
+/* Step tabs: numbered because the content really is a sequence */
+.tabs{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  padding:10px 0;background:var(--paper);border-bottom:2px solid var(--line)}
+.tab{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;align-items:center;
+  padding:10px 14px;border-radius:var(--radius);cursor:pointer;min-height:60px;border:1px solid transparent;
+  transition:background-color 160ms ease,border-color 160ms ease,transform 120ms var(--ease-out)}
+.tab:active{transform:scale(0.98)}
+@media (hover:hover){.tab:hover{background:var(--surface)}}
+.tab-n{grid-row:1 / 3;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  font:800 17px var(--display);border:2px solid var(--line);color:var(--ink-2)}
+.tab-t{font:700 18px/1.15 var(--display);letter-spacing:-0.01em}
+.tab-c{font-size:14px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#step-1:checked ~ .tabs [for="step-1"],
+#step-2:checked ~ .tabs [for="step-2"],
+#step-3:checked ~ .tabs [for="step-3"]{background:var(--surface);border-color:var(--line);box-shadow:0 1px 2px rgb(22 32 43 / .05)}
+#step-1:checked ~ .tabs [for="step-1"] .tab-n,
+#step-2:checked ~ .tabs [for="step-2"] .tab-n,
+#step-3:checked ~ .tabs [for="step-3"] .tab-n{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+#step-1:focus-visible ~ .tabs [for="step-1"],
+#step-2:focus-visible ~ .tabs [for="step-2"],
+#step-3:focus-visible ~ .tabs [for="step-3"]{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Panels: only the checked step shows */
+.panel{display:none;padding-bottom:8px}
+#step-1:checked ~ .panels .p1,
+#step-2:checked ~ .panels .p2,
+#step-3:checked ~ .panels .p3{display:block}
+@media (prefers-reduced-motion:no-preference){
+  #step-1:checked ~ .panels .p1,#step-2:checked ~ .panels .p2,#step-3:checked ~ .panels .p3{animation:step-in 220ms var(--ease-out)}
+}
+@keyframes step-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel .wrap{max-width:none;padding:0}
+.panel section.block{padding-block:28px 8px}
+.panel section.block + section.block{margin-top:20px;border-top:1px solid var(--line-2)}
+.panel h2{font-size:clamp(26px,3.2vw,34px)}
+
+.tally{margin-top:28px;padding:14px 18px;border-left:4px solid var(--good);background:var(--good-soft);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-weight:700;max-width:none}
+
+.pager{display:flex;justify-content:flex-end;margin-top:32px;padding-top:20px;border-top:1px solid var(--line)}
+.next{display:inline-flex;align-items:center;gap:12px;cursor:pointer;font:700 18px var(--display);
+  padding:14px 22px;min-height:52px;border-radius:999px;background:var(--accent);color:var(--surface);
+  transition:transform 120ms var(--ease-out),filter 160ms ease}
+.next .arrow{color:inherit;width:18px}
+.next:active{transform:scale(0.97)}
+@media (hover:hover){.next:hover{filter:brightness(1.08)}}
+.end{margin-top:32px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-2)}
+
+footer.wrap{margin-top:56px}
+@media (min-width:900px){.v-a .hero{padding-block:44px 0}}
+@media (max-width:700px){
+  .story{margin-top:24px}
+  .tabs{gap:4px;padding:8px 0}
+  .tab{grid-template-columns:1fr;grid-template-rows:auto auto;justify-items:center;text-align:center;padding:8px 4px;min-height:64px;row-gap:4px}
+  .tab-n{grid-row:auto;width:30px;height:30px;font-size:15px}
+  .tab-t{font-size:14px}
+  .tab-c{display:none}
+  .next{width:100%;justify-content:center}
+}
+@media print{.tabs,.pager{display:none}.panel{display:block !important}}

@@ -202,5 +202,35 @@ class ReportTest(unittest.TestCase):
         self.assertIn("Open Sunday?", page)
 
 
+    def test_variants_render_both_layouts(self):
+        run = self.copy_fixture()
+        a = report.render(run, variant="a")
+        b = report.render(run, variant="b")
+        self.assertIn('<body class="v-a">', a)
+        self.assertIn('type="radio" name="step" id="step-1" checked', a)
+        self.assertIn('<label class="tab" for="step-3">', a)
+        self.assertIn('<body class="v-b">', b)
+        self.assertIn('<aside class="summary hero"', b)
+        self.assertIn('<h3 class="g-head">Big problems', b)
+        self.assertIn('id="todo"', b)
+        for page in (a, b):
+            self.assertIn("<h1>Your website tells AI assistants to stay out</h1>", page)
+            self.assertIn('<details class="row finding sev-high">', page)
+            self.assertIn("An AI assistant finished 1 of 4 customer tasks.", page)
+            self.assertNotIn("2014", page)
+        self.assertIn('<body class="v-a">', report.render(run, variant="zzz"))  # unknown falls back to a
+
+    def test_products_fix_named_with_count_and_hours_tidied(self):
+        run = self.copy_fixture()
+        (run / "fixes" / "products.jsonld.html").write_text("<script></script>", encoding="utf-8")
+        (run / "products.json").write_text(json.dumps({"count": 34, "products": []}), encoding="utf-8")
+        (run / "fixes" / "needs-owner.md").write_text(
+            '1. Hours found: "Mon-Fri9:00 AM - 5:00 PM Mon-Fri9:00 AM - 5:00 PM". Closed Sunday?\n', encoding="utf-8")
+        page = report.render(run, variant="b")
+        self.assertIn("Your 34 products with their prices, readable by assistants", page)
+        self.assertIn("&quot;Mon-Fri 9:00 AM - 5:00 PM&quot;", page)
+        self.assertNotIn(">Fix file<", page)
+
+
 if __name__ == "__main__":
     unittest.main()
