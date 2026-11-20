@@ -204,6 +204,12 @@ def what_has_the_factory_seen(question: str) -> dict:
             "source": "Landfall audit memory (Cognee)" if os.environ.get("COGNEE_API_KEY") else "local audit log"}
 
 
+@mcp.custom_route("/crew", methods=["GET"])
+async def crew_page(request: Request) -> Response:
+    from landfall import crew
+    return HTMLResponse(crew.render(request.query_params.get("slug") or "small-town-blooms"))
+
+
 @mcp.custom_route("/reports/{slug}", methods=["GET"])
 async def report_page(request: Request) -> Response:
     slug = request.path_params["slug"]
@@ -211,6 +217,9 @@ async def report_page(request: Request) -> Response:
     try:
         from landfall import report
         html = report.render(RUNS / slug, variant=request.query_params.get("v") or "harbor-a")
+        from landfall import crew as _crew
+        import re as _re
+        html = _re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + _crew.toggle(slug, inside=False), html, count=1)
         return HTMLResponse(html)
     except Exception as e:  # noqa: BLE001
         if page.exists():
