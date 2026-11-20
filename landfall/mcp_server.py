@@ -144,6 +144,14 @@ def main() -> None:
     ap.add_argument("--host", default="127.0.0.1")
     a = ap.parse_args()
     mcp.settings.host, mcp.settings.port = a.host, a.port
+    from urllib.parse import urlparse
+    from mcp.server.transport_security import TransportSecuritySettings
+    public_host = urlparse(PUBLIC_URL).netloc
+    mcp.settings.transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[public_host, f"127.0.0.1:{a.port}", f"localhost:{a.port}"],
+        allowed_origins=[f"https://{public_host}", "https://claude.ai", "https://claude.com"],
+    )
     mcp.run(transport="streamable-http")
 
 
