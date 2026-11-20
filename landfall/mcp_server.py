@@ -39,6 +39,7 @@ mcp = FastMCP(
 )
 
 _jobs: dict[str, threading.Thread] = {}
+MAX_JOBS = int(os.environ.get("LANDFALL_MAX_JOBS", "2"))
 
 
 def _report_link(slug: str) -> str:
@@ -58,6 +59,8 @@ def make_agent_ready(url: str, goal: str = "", visibility_query: str = "", busin
     t = _jobs.get(slug)
     if t and t.is_alive():
         return {"slug": slug, "status": "already running", "report": _report_link(slug)}
+    if sum(1 for th in _jobs.values() if th.is_alive()) >= MAX_JOBS:
+        return {"status": "busy", "message": f"Landfall is running {MAX_JOBS} jobs; try again in a few minutes."}
     job = Job(url, goal or None, None, visibility_query or None, name=business_name or None, slug=slug,
               run_tasks=run_agent_tasks)
     th = threading.Thread(target=job.run, daemon=True)
@@ -130,7 +133,7 @@ async def report_file(request: Request) -> Response:
     return FileResponse(target)
 
 
-@mcp.custom_route("/health", methods=["GET"])
+@mcp.custom_route("/healthz", methods=["GET"])
 async def health(_: Request) -> Response:
     return JSONResponse({"ok": True})
 
