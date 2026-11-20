@@ -193,9 +193,10 @@ PENDING = '<span class="pending">re-check after you publish the fixes</span>'
 HEADLINE_ORDER = ("bot_challenge", "robots_ai", "nojs_content", "jsonld_business", "facts_in_images_or_pdf",
                   "menu_js", "jsonld_hours", "jsonld_offers", "contact_machine_readable", "form_labels", "llms_txt")
 HEADLINES = {
-    "bot_challenge": ("ChatGPT can't get into your website", "Your site turns AI assistants away at the door."),
+    "bot_challenge": ("Some AI assistants are turned away at your door", "Requests that identify as certain assistants get an error page instead of your site."),
     "robots_ai": ("Your website tells AI assistants to stay out", "A setting on your site asks assistants like ChatGPT not to read it."),
     "nojs_content": ("Your website looks blank to AI assistants", "Your key facts only appear after a script runs, and most assistants never run it."),
+    "nojs_prices": ("AI assistants can see your products but not your prices", "Your prices only appear after a script runs. Assistants that read the page without running it, like ChatGPT, find no prices."),
     "jsonld_business": ("AI assistants can't be sure who you are", "Your name, address and phone are not labeled in a way assistants can read."),
     "facts_in_images_or_pdf": ("Your menu is locked where AI can't read it", "Your prices sit inside pictures or PDFs that assistants skip."),
     "menu_js": ("AI assistants can't see your menu", "Your menu only appears after a script runs, and most assistants never run it."),
@@ -254,6 +255,11 @@ def headline(scan, do):
     worst = [c for c in fails if SEV_ORDER.get(c.get("severity"), 3) == top_sev]
     worst.sort(key=lambda c: HEADLINE_ORDER.index(c.get("id")) if c.get("id") in HEADLINE_ORDER else 99)
     c = worst[0]
+    # Prices that only appear after JavaScript block shopping outright (verified live: ChatGPT found the products
+    # but "not a price"), so that finding leads whenever it is present.
+    priced = [f for f in fails if f.get("id") == "nojs_content" and "prices" in (f.get("detail") or "")]
+    if priced:
+        c = {"id": "nojs_prices"}
     if c.get("id") in HEADLINES:
         title, sub = HEADLINES[c["id"]]
     else:

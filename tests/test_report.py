@@ -118,8 +118,8 @@ class ReportTest(unittest.TestCase):
     def test_headline_bot_wall_beats_missing_facts(self):
         do = {"tasks": [{"task": "a", "outcome": "failed"}, {"task": "b", "outcome": "failed"}]}
         title, sub = report.headline(self.scan(("jsonld_business", "high"), ("bot_challenge", "high"), ("llms_txt", "low")), do)
-        self.assertEqual(title, "ChatGPT can't get into your website")
-        self.assertIn("turns AI assistants away", sub)
+        self.assertEqual(title, "Some AI assistants are turned away at your door")
+        self.assertIn("error page instead of your site", sub)
         self.assertIn("tried 2 customer tasks and couldn't finish any", sub)
 
     def test_headline_missing_facts(self):
@@ -162,7 +162,7 @@ class ReportTest(unittest.TestCase):
                                   "fix_id": None, "title": "AI agents are not blocked by a bot wall", "detail": "403"})
         (run / "scan.json").write_text(json.dumps(scan), encoding="utf-8")
         page = report.render(run)
-        self.assertIn("<h1>ChatGPT can&#x27;t get into your website</h1>", page)
+        self.assertIn("<h1>Some AI assistants are turned away at your door</h1>", page)
         row = page[page.index("A bot wall turns AI assistants away"):]
         row = row[:row.index("</summary>")]
         self.assertIn("Needs a setting change by you or your website host", row)

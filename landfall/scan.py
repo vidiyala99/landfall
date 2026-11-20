@@ -588,6 +588,11 @@ def check_nojs(raw_text: str, rendered_text: str, url: str, render_error: str | 
     rh = HOURS_RE.search(rendered_text or "")
     if rh and not HOURS_RE.search(raw_text or ""):
         js_only.append(f"hours '{rh.group(0)[:60]}'")
+    price_re = re.compile(r"\$\s?\d{1,4}(?:[.,]\d{2})")
+    rprices, wprices = price_re.findall(rendered_text or ""), price_re.findall(raw_text or "")
+    if len(rprices) >= 2 and not wprices:
+        sample = list(dict.fromkeys(p.replace(" ", "") for p in rprices))[:4]
+        js_only.append(f"prices (e.g. {', '.join(sample)})")
     excerpt = (f"raw HTML text: {rw} words; rendered page text: {rd} words (ratio {ratio:.0%})."
                + (f" Only after JavaScript: {', '.join(js_only)}." if js_only else "")
                + f" Raw starts: {' '.join(raw_text.split())[:120]!r}")
@@ -870,6 +875,15 @@ def render(url: str, out_dir: Path) -> dict:
                 page.goto(url, wait_until="domcontentloaded", timeout=int(TIMEOUT * 1000))
                 try:
                     page.wait_for_load_state("networkidle", timeout=8000)
+                except Exception:
+                    pass
+                # Many shop platforms fill in products and prices by script after the first paint (Floranext:
+                # data-bind="text: price"). Scroll like a shopper and give the scripts time, then read the page.
+                try:
+                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    page.wait_for_timeout(4000)
+                    page.evaluate("window.scrollTo(0, 1500)")
+                    page.wait_for_timeout(2000)
                 except Exception:
                     pass
                 html = page.content()
