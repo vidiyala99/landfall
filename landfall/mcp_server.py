@@ -194,6 +194,16 @@ def list_products_for_ai(url: str) -> dict:
                                         "if you re-run this after price changes")}
 
 
+@mcp.tool()
+def what_has_the_factory_seen(question: str) -> dict:
+    """Ask Landfall's memory (Cognee) what it has learned across all the small-business sites it has audited,
+    e.g. "Which website platforms block AI assistants?" or "What stops assistants from seeing prices?"."""
+    from landfall import memory
+    hits = memory.recall(question)
+    return {"question": question, "answers": [h.get("text", "") for h in hits][:5],
+            "source": "Landfall audit memory (Cognee)" if os.environ.get("COGNEE_API_KEY") else "local audit log"}
+
+
 @mcp.custom_route("/reports/{slug}", methods=["GET"])
 async def report_page(request: Request) -> Response:
     slug = request.path_params["slug"]
