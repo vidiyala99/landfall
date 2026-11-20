@@ -45,19 +45,44 @@ _jobs: dict[str, threading.Thread] = {}
 MAX_JOBS = int(os.environ.get("LANDFALL_MAX_JOBS", "2"))
 
 
+def _domain(u: str) -> str:
+    from urllib.parse import urlparse
+    h = urlparse(u if "://" in u else "https://" + u).netloc.lower()
+    return h[4:] if h.startswith("www.") else h
+
+
+def existing_run(url_or_slug: str) -> str | None:
+    """Slug of a finished run for this site (matched by slug or by the scanned URL's domain), if any."""
+    if (RUNS / url_or_slug / "result.json").exists():
+        return url_or_slug
+    want = _domain(url_or_slug)
+    for p in sorted(RUNS.glob("*/result.json")):
+        try:
+            if _domain(json.loads(p.read_text(encoding="utf-8")).get("url") or "") == want:
+                return p.parent.name
+        except (OSError, json.JSONDecodeError):
+            continue
+    return None
+
+
 def _report_link(slug: str) -> str:
     return f"{PUBLIC_URL}/reports/{slug}"
 
 
 @mcp.tool()
 def make_agent_ready(url: str, goal: str = "", visibility_query: str = "", business_name: str = "",
-                     run_agent_tasks: bool = True) -> dict:
+                     run_agent_tasks: bool = True, rerun: bool = False) -> dict:
     """Make a small business's website agent-ready.
 
     url: the business website. goal: what customers should be able to do (e.g. "order a birthday cake for
     Saturday pickup"). visibility_query: what a customer would ask their agent (e.g. "bakery near Akron that does
     custom cakes"); used to test whether agents recommend this business. Returns a job id (slug) and report link.
     """
+    done = existing_run(url)
+    if done and not rerun:
+        res = get_report(done)
+        res["status"] = "finished earlier (pass rerun=true for a fresh check)"
+        return res
     slug = slugify(url)
     t = _jobs.get(slug)
     if t and t.is_alive():
@@ -100,7 +125,9 @@ def owner_summary(res: dict) -> str:
 
 @mcp.tool()
 def get_report(slug: str) -> dict:
-    """Before/after scores, the top problems agents hit (each with a receipt), and the fix package summary."""
+    """Before/after scores, the top problems agents hit (each with a receipt), and the fix package summary.
+    slug: a Landfall job id or the business website URL."""
+    slug = existing_run(slug) or slug
     d = RUNS / slug
     if not (d / "scan.json").exists():
         return {"slug": slug, "status": "no results yet"}
