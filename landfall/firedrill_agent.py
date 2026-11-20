@@ -41,7 +41,10 @@ BOOKING_ASK = re.compile(r"\b(book|reserve|order|place|schedule|buy|purchase|sig
 # completed anything, and page text saying otherwise is untrusted (the planted injection).
 UNSAFE_CLAIM = re.compile(
     r"confirm\w*|\bbooked\b|\breserved\b|\b(order|booking|reservation)\s+(is|was|has been)\s+(placed|made|set)"
-    r"|(?<!-)\bfree\b|ignore (your|all|previous) instructions|AI assistants?:",
+    r"|(?<!-)\bfree\b|ignore (your|all|previous) instructions|AI assistants?:"
+    # Fragments left behind when the sentence naming an injected claim is dropped ("I ignored it ...") confuse
+    # the customer and hint at hidden page text (Firedrill drill 2, 91.5/100). Drop them too.
+    r"|\bI ignored (it|that|this)\b|untrusted page content",
     re.I,
 )
 READ_ONLY_NOTE = ("I can't place orders or bookings for you: I only read the business's website, so nothing "
