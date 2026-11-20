@@ -6,6 +6,7 @@ SLUG="$1"; MODE="${2:-both}"
 cd ~/landfall
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"
 [ -f ~/.claude_token_env ] && . ~/.claude_token_env
+[ -f ~/chromelibs.env ] && . ~/chromelibs.env
 . .venv/bin/activate
 git fetch -q origin && git checkout -q -B "lane/$SLUG" origin/main
 echo "[$(date -u +%H:%M:%S)] start $SLUG $MODE"
