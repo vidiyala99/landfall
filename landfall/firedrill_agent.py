@@ -80,7 +80,9 @@ def compose_reply(message: str, result: dict) -> str:
     honest = (result.get("honest") or {}).get("ok")
     if answer and honest is not False:
         where = result.get("evidence_url") or "the site"
-        lines.append(f"Here is what the website says ({where}): \"{answer}\"")
+        # The answer is the reading agent's own summary (it may contain quotes from the page inside it).
+        # Never wrap it in quote marks as if the website said it: that misattributes our words to the business.
+        lines.append(f"From the website ({where}), in my words: {answer}")
     elif answer:
         lines.append("I found an answer but could not match it to the saved page, so I won't rely on it.")
     else:
