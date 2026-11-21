@@ -272,6 +272,13 @@ def render_home(connector_url: str) -> str:
     prompt = (f"Add a custom connector for me. Name: Landfall. MCP server URL: {connector_url}/mcp. "
               "Transport: Streamable HTTP. Authentication: none.")
     stages, problems, audits = _counts()
+    # Problems with receipts = failed checks across every saved scan (independent of which machine logged events).
+    problems = 0
+    for sp in RUNS.glob("*/scan.json"):
+        try:
+            problems += sum(1 for c in json.loads(sp.read_text(encoding="utf-8")).get("checks", []) if c.get("status") == "fail")
+        except (OSError, ValueError):
+            pass
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
