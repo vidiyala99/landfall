@@ -67,10 +67,15 @@ text-decoration:none;padding:9px 18px;border-radius:999px;transition:background-
 @media (prefers-reduced-motion:reduce){.fswitch a{transition:none}}"""
 
 
-def toggle(slug: str, inside: bool) -> str:
+def toggle(slug: str, inside: bool | None) -> str:
+    """inside=None marks Home as the current page."""
     s = html.escape(slug or "small-town-blooms")
-    out_cur, in_cur = ('', ' aria-current="page"') if inside else (' aria-current="page"', '')
+    cur = ' aria-current="page"'
+    home_cur = cur if inside is None else ""
+    out_cur = cur if inside is False else ""
+    in_cur = cur if inside is True else ""
     return (f'<style>{TOGGLE_CSS}</style><div class="fswitch"><nav aria-label="View">'
+            f'<a href="/"{home_cur}>Home</a>'
             f'<a href="/reports/{s}"{out_cur}>Outside the factory</a>'
             f'<a href="/crew?slug={s}"{in_cur}>Inside the factory</a></nav></div>')
 
@@ -205,3 +210,93 @@ body{{margin:0;background:var(--night);color:var(--chalk);font:17px/1.45 "Atkins
 <p class="foot">Counts are from this server's own logs (runs/events.jsonl mirrors every Amplitude event; runs/*/result.json are the audits
 sent to Cognee). Firedrill results: firedrill/RESULTS.md. Agents run in parallel on Agent37 sandboxes.</p>
 </body></html>"""
+
+
+HOME_CSS = """
+*{box-sizing:border-box}body{margin:0;color:#f3ead6;font:18px/1.55 "Atkinson Hyperlegible",system-ui,sans-serif;
+background:#0f2230 url(/static/harbor/harbor-ground.webp) center/cover fixed}
+main{min-height:100vh;background:linear-gradient(rgb(12 28 40/.55),rgb(12 28 40/.88) 55%,rgb(12 28 40/.96));padding:18px 24px 64px}
+.in{max-width:1320px;margin:0 auto}
+.qb{margin:26px 0 0;padding:26px 34px;background:url(/static/harbor/wood.webp) center/cover;border:3px solid #c9a24c;border-radius:12px;box-shadow:0 18px 40px -18px #000}
+.qb h1{margin:0;font:400 clamp(40px,6vw,86px)/1 Ultra,serif;color:#f2c75c;text-shadow:0 2px 0 #3b2412}
+.qb p{margin:12px 0 0;font:600 clamp(18px,2vw,24px)/1.35 "Big Shoulders Display",sans-serif;letter-spacing:.02em;color:#f7e7c0}
+.lede{max-width:62ch;font-size:20px;margin:22px 0 0}
+.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
+.door{display:block;text-decoration:none;color:#1d1a16;background:#efd9a6;border-radius:10px;padding:20px 22px;box-shadow:0 12px 28px -14px #000;transition:transform .16s cubic-bezier(.23,1,.32,1)}
+.door:active{transform:scale(.98)}@media (hover:hover){.door:hover{transform:translateY(-3px)}}
+.door h2{margin:0 0 6px;font:400 26px Ultra,serif}.door p{margin:0;font-size:16px}.door.y{background:#f2c75c}
+h3{font:400 32px Ultra,serif;color:#f2c75c;margin:42px 0 6px}.note{margin:0 0 14px;color:#d9ccb0}
+.rope{border-top:4px dashed #c9a24c}
+.shops{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px 16px;padding-top:16px}
+.shop{position:relative;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:#1d1a16;background:#efd9a6;padding:30px 16px 16px;
+clip-path:polygon(14% 0,86% 0,100% 9%,100% 100%,0 100%,0 9%);box-shadow:0 10px 24px -10px #000;transition:transform .16s cubic-bezier(.23,1,.32,1)}
+@media (hover:hover){.shop:hover{transform:translateY(-3px) rotate(-.6deg)}}.shop:active{transform:scale(.98)}
+.hole{position:absolute;top:10px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#7a3b22;box-shadow:inset 0 0 0 3px #b8935a}
+.shop b{font:400 20px Ultra,serif}.shop small{color:#6b5a3e}.find{font-weight:700;margin-top:6px}
+.go{margin-top:auto;padding-top:8px;font:700 14px "Big Shoulders Display",sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#7a3b22}
+.plug{background:url(/static/harbor/slate.webp) center/cover;border-radius:12px;padding:20px 22px;margin-top:8px}
+.plug code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.5 ui-monospace,Consolas,monospace;background:rgb(0 0 0/.35);padding:14px;border-radius:8px;margin-top:10px}
+.stats{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:22px;font:600 18px "Big Shoulders Display",sans-serif;letter-spacing:.03em}
+.stats b{color:#9fe3b8;font-size:28px;margin-right:6px}
+@media (max-width:800px){.doors{grid-template-columns:1fr}main{padding:14px 16px 48px}}
+@media (prefers-reduced-motion:reduce){.door,.shop{transition:none}}
+"""
+
+
+def render_home(connector_url: str) -> str:
+    """The factory's front door: what it does, the shops it audited, the crew, and how to plug it in."""
+    esc = html.escape
+    try:
+        import tomllib
+        sites = {x["slug"]: x for x in tomllib.loads((ROOT / "sites" / "targets.toml").read_text(encoding="utf-8")).get("site", [])}
+    except Exception:  # noqa: BLE001
+        sites = {}
+    from landfall import report as _report
+    shops = []
+    for rp in sorted(RUNS.glob("*/result.json")):
+        slug = rp.parent.name
+        try:
+            scan = json.loads((rp.parent / "scan.json").read_text(encoding="utf-8"))
+            dop = rp.parent / "do.json"
+            do = json.loads(dop.read_text(encoding="utf-8")) if dop.exists() else None
+            title = _report.headline(scan, do)[0]
+        except Exception:  # noqa: BLE001
+            continue
+        meta = sites.get(slug, {})
+        where = ", ".join(x for x in (meta.get("city"), meta.get("state")) if x)
+        cat = (meta.get("category") or "").title()
+        sep = " · " if cat and where else ""
+        shops.append(f'<a class="shop" href="/reports/{esc(slug)}"><span class="hole" aria-hidden="true"></span>'
+                     f'<b>{esc(meta.get("name") or slug)}</b><small>{esc(cat)}{sep}{esc(where)}</small>'
+                     f'<span class="find">{esc(title)}</span><span class="go">Open the report</span></a>')
+    prompt = (f"Add a custom connector for me. Name: Landfall. MCP server URL: {connector_url}/mcp. "
+              "Transport: Streamable HTTP. Authentication: none.")
+    stages, problems, audits = _counts()
+    return (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>Landfall: make your shop visible to every AI assistant</title>'
+        f'<link rel="stylesheet" href="{FONTS_HARBOR}"><style>{HOME_CSS}</style></head><body><main><div class="in">'
+        + toggle("small-town-blooms", None)
+        + '<header class="qb"><h1>Landfall</h1><p>The factory that makes your shop visible, readable and shoppable '
+          'to every AI assistant.</p></header>'
+          '<p class="lede">Your customers now ask ChatGPT, Muse, Claude and Perplexity to find and buy things. '
+          "Landfall's crew of agents tries your website the way each assistant does, shows what breaks with receipts, "
+          'builds the fixes, and proves them on a copy of your site.</p>'
+          '<nav class="doors" aria-label="Start here">'
+          '<a class="door" href="#shops"><h2>Outside the factory</h2><p>Reports for the shops we audited: what '
+          'assistants see, what we fixed, your to-do.</p></a>'
+          '<a class="door" href="/crew?slug=small-town-blooms"><h2>Inside the factory</h2><p>Meet the crew: every '
+          'sailor is an agent, and how each uses Firedrill, Cognee and Amplitude.</p></a>'
+          '<a class="door y" href="#plug"><h2>Plug it into your assistant</h2><p>One prompt connects Landfall to '
+          'Muse, Claude, Grok or ChatGPT.</p></a></nav>'
+        + f'<div class="stats"><span><b>{audits}</b>shops audited</span><span><b>{problems}</b>problems found with '
+          f'receipts</span><span><b>{sum(stages.values())}</b>agent stages logged</span><span><b>2</b>Firedrill drills</span></div>'
+        + '<h3 id="shops">Shops that came ashore</h3><p class="note">Real small businesses outside the Bay. Read-only: '
+          'we never order, pay or send a form.</p><div class="rope"></div><section class="shops">'
+        + "".join(shops)
+        + '</section><h3 id="plug">Plug it into your assistant</h3><div class="plug"><p>Paste this into Muse (or add '
+          'the URL as a custom connector in Claude, Grok or ChatGPT), then ask: "Can my customers\' AI assistants shop '
+          f'on my website?"</p><code>{esc(prompt)}</code></div></div></main></body></html>'
+    )
+

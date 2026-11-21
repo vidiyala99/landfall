@@ -204,6 +204,12 @@ def what_has_the_factory_seen(question: str) -> dict:
             "source": "Landfall audit memory (Cognee)" if os.environ.get("COGNEE_API_KEY") else "local audit log"}
 
 
+@mcp.custom_route("/", methods=["GET"])
+async def home_page(_: Request) -> Response:
+    from landfall import crew
+    return HTMLResponse(crew.render_home(PUBLIC_URL))
+
+
 @mcp.custom_route("/crew", methods=["GET"])
 async def crew_page(request: Request) -> Response:
     from landfall import crew
